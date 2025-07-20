@@ -1,0 +1,6 @@
+[submodule "_deps/box2d-src"]
+	path = _deps/box2d-src
+	url = https://github.com/erincatto/box2d.git
+[submodule "_deps/raylib-src"]
+	path = _deps/raylib-src
+	url = https://github.com/raysan5/raylib.git

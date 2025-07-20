@@ -1,0 +1,13 @@
+{
+	"InstallScripts" : 
+	[
+		"/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/cmake_install.cmake",
+		"/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/raylib-src/cmake_install.cmake",
+		"/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/raylib-src/raylib/cmake_install.cmake",
+		"/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/raylib-src/raylib/external/glfw/cmake_install.cmake",
+		"/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/raylib-src/raylib/external/glfw/src/cmake_install.cmake",
+		"/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/box2d-src/cmake_install.cmake",
+		"/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/box2d-src/src/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
