@@ -84,6 +84,26 @@
 		"set": "cpp",
 		"shared_mutex": "cpp",
 		"unordered_map": "cpp",
-		"xhash": "cpp"
+		"xhash": "cpp",
+		"random": "cpp",
+		"*.m": "cpp",
+		"numeric": "cpp",
+		"any": "cpp",
+		"codecvt": "cpp",
+		"filesystem": "cpp",
+		"fstream": "cpp",
+		"functional": "cpp",
+		"ranges": "cpp",
+		"span": "cpp",
+		"valarray": "cpp",
+		"cstdarg": "cpp",
+		"cwctype": "cpp",
+		"deque": "cpp",
+		"memory_resource": "cpp",
+		"string_view": "cpp",
+		"numbers": "cpp",
+		"text_encoding": "cpp",
+		"cinttypes": "cpp",
+		"variant": "cpp"
 	}
 }

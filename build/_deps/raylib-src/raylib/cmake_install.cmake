@@ -1,8 +1,8 @@
-# Install script for directory: /mnt/c/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src
+# Install script for directory: C:/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/usr/local")
+  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/YourRaylibGame")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -27,11 +27,6 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
-# Install shared libraries without execute permission?
-if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
-  set(CMAKE_INSTALL_SO_NO_EXE "1")
-endif()
-
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -39,42 +34,42 @@ endif()
 
 # Set path to fallback-tool for dependency-resolution.
 if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "/usr/bin/objdump")
+  set(CMAKE_OBJDUMP "C:/msys64/mingw64/bin/objdump.exe")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/raylib-src/raylib/external/glfw/cmake_install.cmake")
+  include("C:/users/anees/documents/github/medium/build/_deps/raylib-src/raylib/external/glfw/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/lib/libraylib.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "C:/users/anees/documents/github/medium/build/lib/libraylib.a")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES
-    "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/raylib.h"
-    "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/rcamera.h"
-    "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/rlgl.h"
-    "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/raymath.h"
+    "C:/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/raylib.h"
+    "C:/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/rcamera.h"
+    "C:/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/rlgl.h"
+    "C:/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/raymath.h"
     )
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/raylib-src/raylib/raylib.pc")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "C:/users/anees/documents/github/medium/build/_deps/raylib-src/raylib/raylib.pc")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/raylib" TYPE FILE FILES "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/raylib-src/raylib/raylib-config-version.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/raylib" TYPE FILE FILES "C:/users/anees/documents/github/medium/build/_deps/raylib-src/raylib/raylib-config-version.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/raylib" TYPE FILE FILES "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/../cmake/raylib-config.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/raylib" TYPE FILE FILES "C:/Users/anees/Documents/GitHub/MEDIUM/_deps/raylib-src/src/../cmake/raylib-config.cmake")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/mnt/c/Users/anees/Documents/GitHub/MEDIUM/build/_deps/raylib-src/raylib/install_local_manifest.txt"
+  file(WRITE "C:/users/anees/documents/github/medium/build/_deps/raylib-src/raylib/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

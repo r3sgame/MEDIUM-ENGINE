@@ -1,0 +1,160 @@
+{
+    "characters": [
+        {
+            "name": "water",
+            "spriteSettings": "water",
+            "meleeWeapon": "sword",
+            "gun": "glock",
+            "skills": ["cyclone"],
+            "health": 100,
+            "medium": 100,
+            "moveSpeed": 760.0,
+            "jumpForce": 1800.0,
+            "width": 60.0,
+            "height": 120.0,
+            "hurtBoxWidth": 30.0,
+            "hurtBoxHeight": 60.0
+        }
+    ],
+
+    "meleeWeapons": [
+        {
+            "name": "sword",
+            "hitBoxWidth": 100.0,
+            "hitBoxHeight": 70.0,
+            "damage": 5,
+            "mediumAffinity": 2,
+            "energy": 300.0,
+            "windupTime": 0.05,
+            "activeTime": 0.1,
+            "recoveryTime": 0.05,
+            "slowdownFactor": 2.0,
+            "stunTime": 1.0
+        }
+    ],
+
+    "guns": [
+        {
+            "name": "glock",
+            "fireTime": 0.2,
+            "ammo": 10,
+            "damage": 2,
+            "mediumAffinity": 5,
+            "reloadTime": 3.0,
+            "range": 1000.0,
+            "energy": 5.0,
+            "slowdownFactor": 2.0,
+            "stunTime": 0.1
+        },
+        {
+            "name": "smg",
+            "fireTime": 10.0,
+            "ammo": 10,
+            "damage": 10,
+            "mediumAffinity": 5,
+            "reloadTime": 10.0,
+            "range": 10.0,
+            "energy": 10.0,
+            "slowdownFactor": 10.0,
+            "stunTime": 0.5
+        },
+        {
+            "name": "shotgun",
+            "fireTime": 0.8,
+            "ammo": 10,
+            "damage": 10,
+            "mediumAffinity": 5,
+            "reloadTime": 10.0,
+            "range": 10.0,
+            "energy": 10.0,
+            "slowdownFactor": 10.0,
+            "stunTime": 0.6
+        }
+    ],
+
+    "skills": [
+        {
+            "name": "cyclone",
+            "input": 0,
+            "animationState": 0,
+            "forceX": 0.0,
+            "forceY": 2200.0,
+            "upHitBoxWidth": 120.0,
+            "upHitBoxHeight": 30.0,
+            "downHitBoxWidth": 120.0,
+            "downHitBoxHeight": 30.0,
+            "forwardHitBoxWidth": 30.0,
+            "forwardHitBoxHeight": 120.0,
+            "backwardHitBoxWidth": 30.0,
+            "backwardHitBoxHeight": 120.0,
+            "damage": 100,
+            "energy": 1000.0,
+            "mediumCost": 30.0,
+            "windupTime": 0.0,
+            "activeTime": 0.75,
+            "recoveryTime": 0.0,
+            "slowdownFactor": 10.0,
+            "stunTime": 0.5
+        }
+    ],
+
+    
+    "spriteSettings": [
+        {
+            "name": "water",
+            "spriteScale": 1.25,
+            "framesPerSecond": 12.0,
+            "spriteOffsetX": -120.0,
+            "spriteOffsetY": -20.0,
+            "frameCounts": {
+                "idle": 1,
+                "jump": 1,
+                "run": 4,
+                "windup": 1,
+                "active": 1,
+                "recovery": 1,
+                "gun": 1,
+                "stun": 1
+            }
+        }
+    ],
+
+    "particles": [],
+
+    "levels": [
+        {
+            "name": "village",
+            "player1PositionX": 0.0,
+            "player1PositionY": -500.0,
+            "player2PositionX": 500.0,
+            "player2PositionY": -500.0,
+            "destructibleBodies": [
+                {
+                    "dynamic": false,
+                    "positionX": 250.0,
+                    "positionY": 400.0,
+                    "rotation": 0,
+                    "width": 2000.0,
+                    "height": 10.0,
+                    "energyCapacity": 1000.0,
+                    "debrisEnergyCapacity": 500.0,
+                    "squareSize": 10
+                }
+            ],
+            "debrisInstances": [
+                {
+                    "positionX": -100.0,
+                    "positionY": -100.0,
+                    "rotation": 0,
+                    "energyCapacity": 10000.0,
+                    "vertex1PositionX": 50.0,
+                    "vertex1PositionY": -50.0,
+                    "vertex2PositionX": -50.0,
+                    "vertex2PositionY": -50.0,
+                    "vertex3PositionX": -50.0,
+                    "vertex3PositionY": 50.0
+                }
+            ]
+        }
+    ]
+}

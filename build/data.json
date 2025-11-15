@@ -1,0 +1,442 @@
+{
+    "characters": [
+        {
+            "name": "water",
+            "spriteSettings": "water",
+            "meleeWeapon": "sword",
+            "gun": "glock",
+            "skills": ["cyclone"],
+            "health": 100.0,
+            "medium": 100.0,
+            "mediumChargeRate": 4.0,
+            "moveSpeed": 760.0,
+            "jumpForce": 1800.0,
+            "width": 60.0,
+            "height": 120.0,
+            "hurtBoxWidth": 30.0,
+            "hurtBoxHeight": 60.0,
+            "shaders": {
+                "medium": "water_medium.fs",
+                "hurt": "water_hurt.fs",
+                "attack": "water_attack.fs"
+            }
+        }
+    ],
+
+    "meleeWeapons": [
+        {
+            "name": "sword",
+            "hitBoxWidth": 100.0,
+            "hitBoxHeight": 70.0,
+            "damage": 5,
+            "mediumAffinity": 2,
+            "energy": 300.0,
+            "knockback": 50.0,
+            "windupTime": 0.05,
+            "activeTime": 0.1,
+            "recoveryTime": 0.05,
+            "slowdownFactor": 2.0,
+            "stunTime": 1.0
+        }
+    ],
+
+    "guns": [
+        {
+            "name": "glock",
+            "fireTime": 0.2,
+            "ammo": 10,
+            "damage": 2,
+            "mediumAffinity": 5,
+            "reloadTime": 3.0,
+            "range": 1000.0,
+            "energy": 5.0,
+            "knockback": 80.0,
+            "slowdownFactor": 2.0,
+            "stunTime": 0.1
+        },
+        {
+            "name": "smg",
+            "fireTime": 10.0,
+            "ammo": 10,
+            "damage": 10,
+            "mediumAffinity": 5,
+            "reloadTime": 10.0,
+            "range": 10.0,
+            "energy": 10.0,
+            "knockback": 100.0,
+            "slowdownFactor": 10.0,
+            "stunTime": 0.5
+        },
+        {
+            "name": "shotgun",
+            "fireTime": 0.8,
+            "ammo": 10,
+            "damage": 10,
+            "mediumAffinity": 5,
+            "reloadTime": 10.0,
+            "range": 10.0,
+            "energy": 10.0,
+            "knockback": 100.0,
+            "slowdownFactor": 10.0,
+            "stunTime": 0.6
+        }
+    ],
+
+    "skills": [
+        {
+            "name": "cyclone",
+            "particle": "water_attack",
+            "input": 0,
+            "animationState": 0,
+            "forceX": 0.0,
+            "forceY": 2200.0,
+            "upHitBoxWidth": 120.0,
+            "upHitBoxHeight": 30.0,
+            "downHitBoxWidth": 120.0,
+            "downHitBoxHeight": 30.0,
+            "forwardHitBoxWidth": 30.0,
+            "forwardHitBoxHeight": 120.0,
+            "backwardHitBoxWidth": 30.0,
+            "backwardHitBoxHeight": 120.0,
+            "damage": 25,
+            "energy": 1000.0,
+            "knockback": 50.0,
+            "mediumCost": 30.0,
+            "windupTime": 0.0,
+            "activeTime": 0.75,
+            "recoveryTime": 0.0,
+            "slowdownFactor": 10.0,
+            "stunTime": 0.5
+        }
+    ],
+
+    
+    "spriteSettings": [
+        {
+            "name": "water",
+            "spriteScale": 1.25,
+            "framesPerSecond": 12.0,
+            "spriteOffsetX": -120.0,
+            "spriteOffsetY": -20.0,
+            "frameCounts": {
+                "idle": 1,
+                "jump": 1,
+                "run": 4,
+                "windup": 1,
+                "active": 1,
+                "recovery": 1,
+                "gun": 1,
+                "stun": 1,
+                "charge": 1
+            },
+            "shaders": {
+                "idle": "water_idle.fs",
+                "jump": "water_jump.fs",
+                "run": "water_run.fs",
+                "windup": "water_windup.fs",
+                "active": "water_active.fs",
+                "recovery": "water_recovery.fs",
+                "gun": "water_gun.fs",
+                "stun": "water_stun.fs",
+                "charge": "water_charge.fs"
+            }
+        }
+    ],
+
+    "particles": [
+        {
+            "name": "water_attack",
+            "additiveBlending": true,
+            "color": {
+                "r": 0.0,
+                "g": 0.0,
+                "b": 1.0,
+                "a": 1.0
+            },
+            "size": 10,
+            "count": 100,
+            "emissionRate": 100.0,
+            "lifetime": 1.0,
+            "offsetX": 0.0,
+            "offsetY": 0.0,
+            "velocityXMin": 1.0,
+            "velocityXMax": 10.0,
+            "velocityYMin": -10.0,
+            "velocityYMax": 10.0,
+            "accelerationX": 0.0,
+            "accelerationY": -10.0
+        },
+        {
+            "name": "material_burst_default",
+            "additiveBlending": false,
+            "color": {
+                "r": 44.0,
+                "g": 23.0,
+                "b": 36.0,
+                "a": 255.0
+            },
+            "size": 10,
+            "count": 100,
+            "emissionRate": 100.0,
+            "lifetime": 1.0,
+            "offsetX": 0.0,
+            "offsetY": 0.0,
+            "velocityXMin": -100.0,
+            "velocityXMax": 100.0,
+            "velocityYMin": -100.0,
+            "velocityYMax": 100.0,
+            "accelerationX": 0.0,
+            "accelerationY": -10.0
+        }
+    ],
+
+    "materials": [
+        {
+            "name": "dirt",
+            "texture": "dirt.png",
+            "textureNumSquares": 2,
+            "debrisTexture": "dirt.png",
+            "debrisTextureNumSquares": 2,
+            "density": 1.0,
+            "energyCapacity": 100.0,
+            "debrisEnergyCapacity": 500.0,
+            "particle": "material_burst_default"
+        }
+    ],
+
+    "levels": [
+        {
+            "name": "village",
+            "postProcessingShader": "forest_overlay.fs",
+            "backgroundMusic": "default",
+            "player1PositionX": -500.0,
+            "player1PositionY": 275.0,
+            "player2PositionX": 500.0,
+            "player2PositionY": 275.0,
+            "backgroundElements": [
+                {
+                    "texture": "trees_3.png",
+                    "parallax": 0.5,
+                    "loopX": true,
+                    "loopY": true,
+                    "scale": 0.15,
+                    "offsetX": 0.0,
+                    "offsetY": 0.0
+                },
+                {
+                    "texture": "trees_2.png",
+                    "parallax": 0.7,
+                    "loopX": true,
+                    "loopY": true,
+                    "scale": 0.15,
+                    "offsetX": 0.0,
+                    "offsetY": 0.0
+                },
+                {
+                    "texture": "trees_1.png",
+                    "parallax": 0.9,
+                    "loopX": true,
+                    "loopY": true,
+                    "scale": 0.15,
+                    "offsetX": 0.0,
+                    "offsetY": 0.0
+                }
+            ],
+            "foregroundElements": [
+                {
+                    "texture": "forest_foreground.png",
+                    "parallax": 1.0,
+                    "loopX": true,
+                    "loopY": false,
+                    "scale": 1.0,
+                    "offsetX": 0.0,
+                    "offsetY": 0.0
+                }
+            ],
+            "destructibleBodies": [
+                {
+                    "dynamic": false,
+                    "material": "dirt",
+                    "positionX": 0,
+                    "positionY": 400.0,
+                    "rotation": 0,
+                    "width": 2000.0,
+                    "height": 50.0,
+                    "squareSize": 20
+                },
+                {
+                    "dynamic": false,
+                    "material": "dirt",
+                    "positionX": -650.0,
+                    "positionY": 525.0,
+                    "rotation": 0,
+                    "width": 700.0,
+                    "height": 200.0,
+                    "squareSize": 20
+                },
+                {
+                    "dynamic": false,
+                    "material": "dirt",
+                    "positionX": 650.0,
+                    "positionY": 525.0,
+                    "rotation": 0,
+                    "width": 700.0,
+                    "height": 200.0,
+                    "squareSize": 20
+                },
+                {
+                    "dynamic": false,
+                    "material": "dirt",
+                    "positionX": -500.0,
+                    "positionY": 100.0,
+                    "rotation": 0,
+                    "width": 500.0,
+                    "height": 50.0,
+                    "squareSize": 20
+                },
+                {
+                    "dynamic": false,
+                    "material": "dirt",
+                    "positionX": 500.0,
+                    "positionY": 100.0,
+                    "rotation": 0,
+                    "width": 500.0,
+                    "height": 50.0,
+                    "squareSize": 20
+                },
+                {
+                    "dynamic": false,
+                    "material": "dirt",
+                    "positionX": 0,
+                    "positionY": 875.0,
+                    "rotation": 0,
+                    "width": 2000.0,
+                    "height": 500.0,
+                    "squareSize": 200
+                },
+                {
+                    "dynamic": false,
+                    "material": "dirt",
+                    "positionX": 975.0,
+                    "positionY": 200.0,
+                    "rotation": 0,
+                    "width": 50.0,
+                    "height": 5000.0,
+                    "squareSize": 200
+                },
+                {
+                    "dynamic": false,
+                    "material": "dirt",
+                    "positionX": -975.0,
+                    "positionY": 200.0,
+                    "rotation": 0,
+                    "width": 50.0,
+                    "height": 5000.0,
+                    "squareSize": 200
+                }
+            ],
+            "debrisInstances": []
+        },
+        {
+            "name": "wall",
+            "player1PositionX": -500.0,
+            "player1PositionY": 275.0,
+            "player2PositionX": 500.0,
+            "player2PositionY": 275.0,
+            "destructibleBodies": [
+                {
+                    "dynamic": true,
+                    "positionX": 0,
+                    "positionY": -150.0,
+                    "rotation": 0,
+                    "width": 400.0,
+                    "height": 1000.0,
+                    "energyCapacity": 100.0,
+                    "debrisEnergyCapacity": 100000000000000.0,
+                    "squareSize": 20
+                },
+                {
+                    "dynamic": false,
+                    "positionX": -950,
+                    "positionY": 100.0,
+                    "rotation": 0,
+                    "width": 400.0,
+                    "height": 500.0,
+                    "energyCapacity": 100.0,
+                    "debrisEnergyCapacity": 400.0,
+                    "squareSize": 20
+                },
+                {
+                    "dynamic": false,
+                    "positionX": 950,
+                    "positionY": 100.0,
+                    "rotation": 0,
+                    "width": 400.0,
+                    "height": 500.0,
+                    "energyCapacity": 100.0,
+                    "debrisEnergyCapacity": 400.0,
+                    "squareSize": 20
+                },
+                {
+                    "dynamic": false,
+                    "positionX": 0,
+                    "positionY": 600.0,
+                    "rotation": 0,
+                    "width": 2400.0,
+                    "height": 500.0,
+                    "energyCapacity": 10000000.0,
+                    "debrisEnergyCapacity": 500.0,
+                    "squareSize": 200
+                },
+                {
+                    "dynamic": false,
+                    "positionX": 1175.0,
+                    "positionY": 200.0,
+                    "rotation": 0,
+                    "width": 50.0,
+                    "height": 5000.0,
+                    "energyCapacity": 10000000.0,
+                    "debrisEnergyCapacity": 500.0,
+                    "squareSize": 200
+                },
+                {
+                    "dynamic": false,
+                    "positionX": -1175.0,
+                    "positionY": 200.0,
+                    "rotation": 0,
+                    "width": 50.0,
+                    "height": 5000.0,
+                    "energyCapacity": 10000000.0,
+                    "debrisEnergyCapacity": 500.0,
+                    "squareSize": 200
+                }
+            ],
+            "debrisInstances": [
+                {
+                    "positionX": -324.5,
+                    "positionY": -75.0,
+                    "rotation": 0,
+                    "energyCapacity": 10000.0,
+                    "vertex1PositionX": -100.0,
+                    "vertex1PositionY": -100.0,
+                    "vertex2PositionX": 100.0,
+                    "vertex2PositionY": 100.0,
+                    "vertex3PositionX": -100.0,
+                    "vertex3PositionY": 100.0
+                },
+                {
+                    "positionX": 324.5,
+                    "positionY": -75.0,
+                    "rotation": 0,
+                    "energyCapacity": 10000.0,
+                    "vertex1PositionX": 100.0,
+                    "vertex1PositionY": -100.0,
+                    "vertex2PositionX": 100.0,
+                    "vertex2PositionY": 100.0,
+                    "vertex3PositionX": -100.0,
+                    "vertex3PositionY": 100.0
+                }
+            ]
+        }
+    ]
+}

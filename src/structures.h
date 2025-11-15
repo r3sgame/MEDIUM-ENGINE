@@ -2,91 +2,407 @@
 #define STRUCTURES_H
 
 #include "raylib.h"
-#include <box2d/box2d.h> // Include Box2D header (this pulls in b2_api.h which defines IDs)
+#include "rlgl.h"
+#include "raymath.h"
+#include <box2d/box2d.h>
+#include <unordered_map>
 #include <vector>
 #include <memory>
+#include <iostream>
+#include <cmath>
+#include <cstring>
+#include <numeric>
+#include <fstream>
+#include "json.hpp"
+#include "partikel.h"
+
+// for convenience
+using json = nlohmann::json;
 
 // Define a conversion factor from pixels to Box2D units (meters)
-#define PIXELS_PER_METER 30.0f
+#define PIXELS_PER_METER 120.0f
 #define METERS_PER_PIXEL (1.0f / PIXELS_PER_METER)
 
 #define PI 3.14159265358979323846f
 
-// Box2D simulation parameters
-#define dt (1.0f / 60.0f)
 #define SUB_STEPS 8
+#define FPS 60
+#define GRAVITY 9.81f
+#define CHARACTER_GRAVITY_ADDON 30.0f
 
 #define SCREEN_WIDTH 1920
 #define SCREEN_HEIGHT 1080
 
 #define CAM_X_INTERPOLATION 0.2f
 #define CAM_Y_INTERPOLATION 0.2f
+#define CAM_MAX_ZOOM 1.6f
+#define CAM_ZOOM_RATE 1500.0f
+#define CAM_ZOOM_INTERPOLATION 0.2f
 
 #define COLLISION_MARGIN 0.001f
-#define JITTER_TOLERANCE 0.1f
-#define MAX_SHAPES_PER_BODY 10000
+#define JITTER_TOLERANCE 0.2f
+#define VELOCITY_TOLERANCE 1.0f
 #define COYOTE_TIME 0.15f
-#define BASE_FRICTION 1.0f
+#define CHARACTER_FRICTION 1.0f
 
 #define DEFAULT_FRICTION 0.5f
 #define DEFAULT_RESTITUTION 0.0f
 
-// CHARACTER
+#define MENU_BG_COLOR Color{ 0, 0, 0, 255 }
+#define PAUSE_BG_COLOR Color{ 0, 0, 0, 128 }
+#define TITLE_COLOR Color{ 255, 255, 255, 255 }
+#define TEXT_COLOR Color{ 255, 255, 255, 255 }
+#define SUBTEXT_COLOR Color{ 128, 128, 128, 255 }
+#define HOVER_COLOR Color{ 255, 0, 0, 255 }
+
+#define TITLE_SIZE 64
+#define TEXT_SIZE 32
+#define SUBTEXT_SIZE 16
+
+#define TITLE_SPACING 64
+#define TEXT_SPACING 32
+#define SUBTEXT_SPACING 16
+
+#define DEBUG 1
+
+#define DEFAULT_CHARACTER_MASS 1.0f
+#define DEFAULT_MATERIAL_MASS 1.0f
+
+#define GL_TEXTURE_2D 0x0DE1
+#define GL_TEXTURE_MIN_FILTER 0x2801
+#define GL_LINEAR 0x2601
+
+#define GLSL_VERSION "330"
+
+// Forward declarations
+class Debris;
+class Level;
+struct Option;
+
+class Menu {
+public:
+    Menu(std::string title, bool isPauseMenu, float buttonSpacing, Vector2 titlePosition, Vector2 buttonPosition, Vector2 subtextPosition, Vector2 imagePosition);
+    Menu(std::string title, bool isPauseMenu, float buttonSPacing, Vector2 titlePosition, Vector2 buttonPosition, Vector2 subtextPosition);
+
+    void Update();
+    void AddOption(Option option);
+    void LoadMenu();
+    void UnloadMenu();
+
+private:
+    std::string title;
+    bool isPauseMenu;
+    std::vector<Option> options;
+    std::vector<Vector2> optionPositions;
+
+    float buttonSpacing;
+
+    Vector2 titlePosition;
+    Vector2 buttonPosition;
+    Vector2 subtextPosition;
+    Vector2 imagePosition;
+
+    bool drawImages;
+    bool loaded;
+};
+
+struct Option {
+public:
+    Option(std::string text, std::string subtext, Texture2D image, Menu* menuToLoad);
+    Option(std::string text, std::string subtext, Texture2D image, Level* levelToLoad);
+
+    void Select(bool isPauseMenu);
+
+    bool hovered = false;
+    
+    std::string text;
+    std::string subtext;
+    Texture2D image;
+    
+    int optionType;
+    Menu* menuToLoad;
+    Level* levelToLoad;
+};
+
+enum struct AnimationStates {
+    IDLE,
+    JUMP,
+    RUN,
+    WINDUP,
+    WINDUP_JUMP,
+    WINDUP_RUN,
+    ACTIVE,
+    ACTIVE_JUMP,
+    ACTIVE_RUN,
+    RECOVERY,
+    RECOVERY_JUMP,
+    RECOVERY_RUN,
+    GUN,
+    GUN_JUMP,
+    GUN_RUN,
+    CHARGE,
+    STUN,
+    MISC_1,
+    MISC_2,
+    MISC_3
+};
+
+struct SpriteSettings {
+public:
+    SpriteSettings(Vector2 spriteOffset, std::string folderName, float spriteScale, float framesPerSecond, std::unordered_map<AnimationStates, int> frameCounts,
+         std::unordered_map<AnimationStates, Shader> shaders);
+    
+    std::vector<Texture2D> sprites;
+    Vector2 offset;
+    float scale;
+    float framesPerSecond;
+    int totalFrames;
+
+    std::unordered_map<AnimationStates, int> frameCounts;
+    std::unordered_map<AnimationStates, Shader> shaders;
+};
+
+struct MeleeWeapon {
+    MeleeWeapon(Vector2 hitBox, float damage, float mediumAffinity, float energy, float knockback, float windupTime, float activeTime, float recoveryTime, float stunTime, float slowdownFactor) :
+    hitBox(hitBox), damage(damage), mediumAffinity(mediumAffinity), energy(energy), knockback(knockback), windupTime(windupTime), activeTime(activeTime), stunTime(activeTime), 
+    recoveryTime(recoveryTime), slowdownFactor(slowdownFactor) {}
+    
+    Vector2 hitBox;
+
+    float damage;
+    float mediumAffinity;
+    float energy;
+    float knockback;
+
+    float windupTime;
+    float activeTime;
+    float recoveryTime;
+    
+    float stunTime;
+    float slowdownFactor;
+};
+
+struct SpriteElement {
+    SpriteElement(Vector2 offset, float scale, Texture2D texture, float parallax, bool loopX, bool loopY) : offset(offset), scale(scale), texture(texture), parallax(parallax),
+     loopX(loopX), loopY(loopY) {}
+    Vector2 offset;
+    float scale;
+    Texture2D texture;
+    float parallax;
+    bool loopX;
+    bool loopY;
+};
+
+// This struct captures the closest hit shape
+struct RayCastContext
+{
+    b2ShapeId shape;
+    b2Vec2 point;
+    b2Vec2 normal;
+    float fraction;
+};
+
+enum struct InputTypes {  
+    JUMP,
+    RIGHT,
+    LEFT,
+    ATTACK,
+    SHOOT,
+    CHARGE,
+    SKILL
+};
+
+struct Skill {
+    Skill(Vector2 force, Vector2 upHitBox, Vector2 downHitBox, Vector2 forwardHitBox, Vector2 backwardHitBox, float energy, float damage, float mediumCost, float knockback,
+        float windupTime, float activeTime, float recoveryTime, float stunTime, float slowdownFactor, AnimationStates animationState, InputTypes input, Emitter* particles) 
+    : force(force), upHitBox(upHitBox), downHitBox(downHitBox), forwardHitBox(forwardHitBox), backwardHitBox(backwardHitBox), energy(energy), damage(damage), mediumCost(mediumCost), knockback(knockback), 
+    windupTime(windupTime), activeTime(activeTime), recoveryTime(recoveryTime), stunTime(stunTime), slowdownFactor(slowdownFactor), animationState(animationState), input(input), particles(particles) {}
+    
+    Vector2 force;
+
+    Vector2 upHitBox;
+    Vector2 downHitBox;
+    Vector2 forwardHitBox;
+    Vector2 backwardHitBox;
+
+    float energy;
+    float damage;
+    float mediumCost;
+    float knockback;
+
+    float windupTime;
+    float activeTime;
+    float recoveryTime;
+    
+    float stunTime;
+    float slowdownFactor;
+
+    AnimationStates animationState;
+    InputTypes input;
+    Emitter* particles;
+};
+
+struct Gun {
+    Gun(float fireTime, int ammo, float damage, float mediumAffinity, float reloadTime, float range, float energy, float knockback, float stunTime, float slowdownFactor) :
+    fireTime(fireTime), maxAmmo(ammo), damage(damage), mediumAffinity(mediumAffinity), reloadTime(reloadTime), range(range), energy(energy), knockback(knockback), stunTime(stunTime), slowdownFactor(slowdownFactor) {}
+
+    float fireTime;
+    int maxAmmo;
+    float damage;
+    float mediumAffinity;
+    float reloadTime;
+    float range;
+    float energy;
+    float knockback;
+    float stunTime;
+    float slowdownFactor;
+};
+
+enum struct BodyTypes {
+    CHARACTER,
+    DESTRUCTIBLE_BODY,
+    DEBRIS
+};
+
+enum struct CharacterTypes {
+    PLAYER_1,
+    PLAYER_2,
+    CPU
+};
+
+enum struct CharacterStates {
+    RELOAD,
+    GUN,
+    WEAPON,
+    SKILL,
+    STUN,
+    CHARGE,
+    Size // Cast to int to return number of states, useful for hashmaps
+};
+
 class Character {
 public:
-    Vector2 position;
-    Rectangle rect;
-
-    b2BodyId body;
-
-    Character(b2WorldId worldId, float width, float height, float moveSpeed, float jumpForce, int maxHealth, int maxMedium, bool isPlayer);
-    ~Character(); // Destructor to destroy Box2D body
+    Character(b2WorldId worldId, Vector2 initialPosition, Vector2 bodySize, Vector2 hurtBoxSize, float moveSpeed, float jumpForce, float maxHealth, float maxMedium, float mediumChargeRate,
+        CharacterTypes characterType, MeleeWeapon equippedWeapon, Gun equippedGun, SpriteSettings spriteSettings, std::vector<Skill> availableSkills);
+    ~Character();
 
     void Update();
     void Draw();
 
-    // Movement functions (apply forces/impulses to Box2D body)
+    // Public getters for character state if needed by external classes
+    Vector2 GetPosition() const { return position; }
+    Rectangle GetRect() const { return rect; }
+    b2BodyId GetBodyId() const { return body; }
+
+    float GetMaxHealth() const { return maxHealth; }
+    float GetMaxMedium() const { return maxMedium; }
+    int GetAmmo() const { return ammo; }
+
+    CharacterTypes GetCharacterType() const { return characterType; }
+
+    bool IsUsingSkill() const { return states.at(CharacterStates::SKILL); }
+    bool IsAttacking() const { return states.at(CharacterStates::WEAPON); }
+    bool IsShooting() const { return states.at(CharacterStates::GUN); }
+    bool IsReloading() const { return states.at(CharacterStates::RELOAD); }
+    bool IsStunned() const { return states.at(CharacterStates::STUN); }
+
+    Skill GetActiveSkill() const { return activeSkill; }
+
+    MeleeWeapon weapon;
+    Gun gun;
+    std::vector<Skill> skills;
+
+    float health;
+    float medium;
+
+    // Setters
+    void SetPosition(Vector2 newPosition);
+    void SetStun(float stunTime);
+
+private:
+    b2WorldId world;
+    b2BodyId body;
+
+    Vector2 size;
+    Vector2 hurtBox;
+
+    Vector2 position;
+    Rectangle rect;
+
+    float moveSpeedPixelsPerSec;
+    float jumpForcePixels;
+    CharacterTypes characterType;
+    float coyoteTimeCounter;
+
+    float maxHealth;
+    float maxMedium;
+    float chargeRate;
+    Skill activeSkill;
+    int ammo;
+    
+    std::unordered_map<CharacterStates, float> timers;
+    std::unordered_map<CharacterStates, bool> states;
+
+    bool isFacingRight = true;
+
+    int currentFrame = 0;
+    int maxFrame = 1;
+    float frameTimer = 0.0f;
+    AnimationStates animationState;
+    SpriteSettings spriteSet;
+
+    bool IsGrounded();
+    
     void MoveLeft();
     void MoveRight();
     void Jump();
-    void ApplyDownwardForce();
+    void Shoot();
+    void StartMeleeAttack();
+    void ProcessMeleeAttack();
+    void StartSkill(Skill skill);
+    void ProcessSkill();
+    void Charge();
+};
 
-    bool IsGrounded(); // Check if the character is grounded
+Vector2 GetCameraPosition(std::vector<Character*> characters, Vector2 initialPosition);
 
-    int mxHealth;
-    int mxMedium;
-    int health;
-    int medium;
+Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 initialPosition, CharacterTypes characterType);
+
+struct BodyMaterial {
+    BodyMaterial(Texture2D texture, Texture2D debrisTexture, int textureNumShapes, int debrisTextureNumShapes, float density, float energyCapacity, float debrisEnergyCapacity) :
+    texture(texture), textureNumShapes(textureNumShapes), density(density), energyCapacity(energyCapacity), debrisTexture(debrisTexture), debrisTextureNumShapes(debrisTextureNumShapes), debrisEnergyCapacity(debrisEnergyCapacity) {};
+    Texture2D texture;
+    Texture2D debrisTexture;
+    int textureNumShapes;
+    int debrisTextureNumShapes;
+    float density;
+    float energyCapacity;
+    float debrisEnergyCapacity;
+};
+
+class DestructibleBody {
+public:
+    DestructibleBody(b2WorldId worldId, BodyMaterial material, Vector2 initialPosition, float initialRotation, bool dynamic, float width, float height, float squareSize);
+    ~DestructibleBody();
+
+    void Update();
+    void Draw();
+    void DestroyShape(b2ShapeId shape);
+    float GetEnergyCapacity() { return material.energyCapacity; }
 
 private:
-    b2WorldId world; // Store a reference to the world to destroy the body
-    float moveSpeedPixelsPerSec; // Store speed in pixels/sec
-    float jumpForcePixels;       // Store jump force in pixels
-    bool player;
-    bool isGroundedLastFrame; // To detect when the player just left the ground
-    float coyoteTimeCounter;  // Counts down from coyoteTimeDuration
-};
+    b2WorldId world;
+    b2BodyId body;
+    std::vector<Debris*> debrisInstances;
 
-// WEAPON
-class MeleeWeapon {
-public:
-    float range;
-    float damage;
-    float energy;
-};
+    BodyMaterial material;
+    int maxShapesCapacity; // Initial max number of shapes expected, used for array sizing
+    int triangles;
 
-// GUN
-class Gun {
-public:
-    float fireRate;
-    float ammo;
-    float damage;
-    float reloadTime;
-    float range;
-    float energy;
+    Vector2 position;
+    float rotation;
+    Rectangle rect;
 };
-
-// DESTRUCTIBLE BODY
 
 class Debris {
 public:
@@ -94,7 +410,15 @@ public:
     ~Debris();
 
     void Update();
+    void DestroyShape(b2ShapeId shape);
+    
+    float GetEnergyCapacity() { return energyCapacity; }
+    bool IsDestroyed() const { return destroyed; } // Getter for destroyed state
+    b2BodyId GetBodyId() const { return body; }
+    float* GetVertexMagnitudes() { return vertexMagnitudes; }
+    float* GetVertexAngles() { return vertexAngles; }
 
+protected:
     b2WorldId world;
     b2BodyId body;
 
@@ -102,46 +426,65 @@ public:
     float vertexAngles[8];
     int numVertices;
 
-    float energyCap;
-    bool destroyed = false;
+    float energyCapacity;
+    bool destroyed; // Made private, with a public getter
     Vector2 position;
+    float rotation;
+
+    void BuildMeshFromBody();
 };
 
-class DestructibleBody {
+class FreeDebris : public Debris {
 public:
-    DestructibleBody(b2WorldId worldId, Vector2 initialPosition, float initialRotation, bool dynamic, float width, float height, float energyCapacity, float debrisEnergyCapacity, float squareSize);
-    ~DestructibleBody();
-
-    b2WorldId world;
-    b2BodyId body;
-    std::vector<std::unique_ptr<Debris>> debrisInstances;
-
-    float energyCap;
-    float debrisEnergyCap;
-    int triangles;
-
-    Vector2 position;
-    Rectangle rect;
-
-    void Update();
+    FreeDebris(b2WorldId worldId, Vector2 initialPosition, float initialRotation, float energyCapacity, b2Polygon polygonShape, Texture2D texture, int textureNumShapes) :
+        Debris(worldId, initialPosition, initialRotation, energyCapacity, polygonShape), texture(texture), textureNumShapes(textureNumShapes) {};
+    void Draw();
+private:
+    Texture2D texture;
+    int textureNumShapes;
 };
-
-// LEVEL
 
 class Level {
 public:
-    Level(b2WorldId worldId, Character& playerToLoad);
+    Level(b2WorldId worldId, Shader postProcessingShader, std::vector<Character*> characters, std::vector<DestructibleBody*> destructibleBodies, 
+        std::vector<FreeDebris*> freeDebrisInstances, std::vector<SpriteElement> backgroundElements, std::vector<SpriteElement> foregroundElements)
+     : world(worldId), postProcessingShader(postProcessingShader), camera({ 0 }), characters(characters), destructibleBodies(destructibleBodies), freeDebrisInstances(freeDebrisInstances), 
+     backgroundElements(backgroundElements), foregroundElements(foregroundElements) {
+        camera.target = { 0.0f, 0.0f };
+        camera.offset = { (float)SCREEN_WIDTH / 2, (float)SCREEN_HEIGHT / 2 };
+        camera.rotation = 0.0f;
+        camera.zoom = 1.5f;
 
-    b2WorldId world;
-    Character& player;
-    std::vector<std::unique_ptr<DestructibleBody>> destructibleBodies;
-    std::vector<std::unique_ptr<Debris>> freeDebrisInstances;
+        renderTexture = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+     }
+    ~Level() = default; // Use default destructor as unique_ptrs handle memory
 
-    void LoadLevel(Vector2 spawnPoint);
+    void LoadLevel();
     void UnloadLevel();
     void Update();
 
-    bool loaded = false;
+    bool IsLoaded() const { return loaded; } // Getter for loaded state
+    bool IsPaused() const { return paused; }
+
+private:
+    b2WorldId world;
+    Camera2D camera;
+
+    Shader postProcessingShader;
+    RenderTexture2D renderTexture;
+
+    std::vector<Character*> characters;
+    std::vector<DestructibleBody*> destructibleBodies;
+    std::vector<FreeDebris*> freeDebrisInstances;
+
+    std::vector<SpriteElement> backgroundElements;
+    std::vector<SpriteElement> foregroundElements;
+
+    bool loaded = true;
+    bool paused = false;
 };
+
+Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds);
+Emitter* LoadParticleEmitter(std::string name);
 
 #endif // STRUCTURES_H
