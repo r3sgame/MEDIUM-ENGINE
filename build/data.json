@@ -5,7 +5,7 @@
             "spriteSettings": "water",
             "meleeWeapon": "sword",
             "gun": "glock",
-            "skills": ["cyclone"],
+            "skills": ["cyclone", "tsunami"],
             "health": 100.0,
             "medium": 100.0,
             "mediumChargeRate": 4.0,
@@ -52,7 +52,10 @@
             "energy": 5.0,
             "knockback": 80.0,
             "slowdownFactor": 2.0,
-            "stunTime": 0.1
+            "stunTime": 0.1,
+            "muzzleFlash": "muzzle_flash",
+            "muzzleFlashPositionX": 100.0,
+            "muzzleFlashPositionY": -40.0
         },
         {
             "name": "smg",
@@ -65,7 +68,10 @@
             "energy": 10.0,
             "knockback": 100.0,
             "slowdownFactor": 10.0,
-            "stunTime": 0.5
+            "stunTime": 0.5,
+            "muzzleFlash": "muzzle_flash",
+            "muzzleFlashPositionX": 0.0,
+            "muzzleFlashPositionY": 0.0
         },
         {
             "name": "shotgun",
@@ -78,16 +84,19 @@
             "energy": 10.0,
             "knockback": 100.0,
             "slowdownFactor": 10.0,
-            "stunTime": 0.6
+            "stunTime": 0.6,
+            "muzzleFlash": "muzzle_flash",
+            "muzzleFlashPositionX": 0.0,
+            "muzzleFlashPositionY": 0.0
         }
     ],
 
     "skills": [
         {
             "name": "cyclone",
-            "particle": "water_attack",
+            "particle": "cyclone",
             "input": 0,
-            "animationState": 0,
+            "animationState": 1,
             "forceX": 0.0,
             "forceY": 2200.0,
             "upHitBoxWidth": 120.0,
@@ -98,7 +107,7 @@
             "forwardHitBoxHeight": 120.0,
             "backwardHitBoxWidth": 30.0,
             "backwardHitBoxHeight": 120.0,
-            "damage": 25,
+            "damage": 15,
             "energy": 1000.0,
             "knockback": 50.0,
             "mediumCost": 30.0,
@@ -107,6 +116,31 @@
             "recoveryTime": 0.0,
             "slowdownFactor": 10.0,
             "stunTime": 0.5
+        },
+        {
+            "name": "tsunami",
+            "particle": "tsunami",
+            "input": 3,
+            "animationState": 6,
+            "forceX": 0.0,
+            "forceY": 0.0,
+            "upHitBoxWidth": 0.0,
+            "upHitBoxHeight": 0.0,
+            "downHitBoxWidth": 0.0,
+            "downHitBoxHeight": 0.0,
+            "forwardHitBoxWidth": 240.0,
+            "forwardHitBoxHeight": 120.0,
+            "backwardHitBoxWidth": 0.0,
+            "backwardHitBoxHeight": 0.0,
+            "damage": 25,
+            "energy": 1000.0,
+            "knockback": 100.0,
+            "mediumCost": 30.0,
+            "windupTime": 0.05,
+            "activeTime": 0.1,
+            "recoveryTime": 0.05,
+            "slowdownFactor": 2.0,
+            "stunTime": 0.75
         }
     ],
 
@@ -145,48 +179,112 @@
 
     "particles": [
         {
-            "name": "water_attack",
-            "additiveBlending": true,
-            "color": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 1.0,
-                "a": 1.0
-            },
-            "size": 10,
-            "count": 100,
-            "emissionRate": 100.0,
-            "lifetime": 1.0,
-            "offsetX": 0.0,
-            "offsetY": 0.0,
-            "velocityXMin": 1.0,
-            "velocityXMax": 10.0,
-            "velocityYMin": -10.0,
-            "velocityYMax": 10.0,
+            "name": "cyclone",
+            "shader": "",
+            "velocityXMin": -100.0,
+            "velocityXMax": 100.0,
+            "velocityYMin": -2000.0,
+            "velocityYMax": 0.0,
             "accelerationX": 0.0,
-            "accelerationY": -10.0
+            "accelerationY": 4000.0,
+            "scaleMin": 10.0,
+            "scaleMax": 20.0,
+            "lifetimeMin": 0.5,
+            "lifetimeMax": 0.75,
+            "numParticles": 100,
+            "colorBound1": {
+                "r": 94.0,
+                "g": 176.0,
+                "b": 255.0,
+                "a": 220.0
+            },
+            "colorBound2": {
+                "r": 94.0,
+                "g": 176.0,
+                "b": 200.0,
+                "a": 50.0
+            }
+        },
+        {
+            "name": "tsunami",
+            "shader": "",
+            "velocityXMin": 500.0,
+            "velocityXMax": 4000.0,
+            "velocityYMin": -200.0,
+            "velocityYMax": 0.0,
+            "accelerationX": 0.0,
+            "accelerationY": 4000.0,
+            "scaleMin": 10.0,
+            "scaleMax": 20.0,
+            "lifetimeMin": 0.01,
+            "lifetimeMax": 0.2,
+            "numParticles": 100,
+            "colorBound1": {
+                "r": 94.0,
+                "g": 176.0,
+                "b": 255.0,
+                "a": 220.0
+            },
+            "colorBound2": {
+                "r": 94.0,
+                "g": 176.0,
+                "b": 200.0,
+                "a": 50.0
+            }
         },
         {
             "name": "material_burst_default",
-            "additiveBlending": false,
-            "color": {
-                "r": 44.0,
-                "g": 23.0,
-                "b": 36.0,
-                "a": 255.0
-            },
-            "size": 10,
-            "count": 100,
-            "emissionRate": 100.0,
-            "lifetime": 1.0,
-            "offsetX": 0.0,
-            "offsetY": 0.0,
-            "velocityXMin": -100.0,
-            "velocityXMax": 100.0,
-            "velocityYMin": -100.0,
-            "velocityYMax": 100.0,
+            "shader": "",
+            "velocityXMin": -200.0,
+            "velocityXMax": 200.0,
+            "velocityYMin": -200.0,
+            "velocityYMax": 200.0,
             "accelerationX": 0.0,
-            "accelerationY": -10.0
+            "accelerationY": 0.0,
+            "scaleMin": 10.0,
+            "scaleMax": 20.0,
+            "lifetimeMin": 0.01,
+            "lifetimeMax": 0.2,
+            "numParticles": 100,
+            "colorBound1": {
+                "r": 255.0,
+                "g": 170.0,
+                "b": 0.0,
+                "a": 220.0
+            },
+            "colorBound2": {
+                "r": 255.0,
+                "g": 0.0,
+                "b": 0.0,
+                "a": 50.0
+            }
+        },
+        {
+            "name": "muzzle_flash",
+            "shader": "",
+            "velocityXMin": -200.0,
+            "velocityXMax": 200.0,
+            "velocityYMin": -200.0,
+            "velocityYMax": 200.0,
+            "accelerationX": 0.0,
+            "accelerationY": 0.0,
+            "scaleMin": 10.0,
+            "scaleMax": 20.0,
+            "lifetimeMin": 0.01,
+            "lifetimeMax": 0.2,
+            "numParticles": 100,
+            "colorBound1": {
+                "r": 255.0,
+                "g": 170.0,
+                "b": 0.0,
+                "a": 220.0
+            },
+            "colorBound2": {
+                "r": 255.0,
+                "g": 0.0,
+                "b": 0.0,
+                "a": 50.0
+            }
         }
     ],
 
@@ -199,6 +297,17 @@
             "debrisTextureNumSquares": 2,
             "density": 1.0,
             "energyCapacity": 100.0,
+            "debrisEnergyCapacity": 500.0,
+            "particle": "material_burst_default"
+        },
+        {
+            "name": "stone_barrier",
+            "texture": "stone.png",
+            "textureNumSquares": 2,
+            "debrisTexture": "stone.png",
+            "debrisTextureNumSquares": 2,
+            "density": 1.0,
+            "energyCapacity": 10000.0,
             "debrisEnergyCapacity": 500.0,
             "particle": "material_burst_default"
         }
@@ -306,7 +415,7 @@
                 },
                 {
                     "dynamic": false,
-                    "material": "dirt",
+                    "material": "stone_barrier",
                     "positionX": 0,
                     "positionY": 875.0,
                     "rotation": 0,
@@ -316,7 +425,7 @@
                 },
                 {
                     "dynamic": false,
-                    "material": "dirt",
+                    "material": "stone_barrier",
                     "positionX": 975.0,
                     "positionY": 200.0,
                     "rotation": 0,
@@ -326,7 +435,7 @@
                 },
                 {
                     "dynamic": false,
-                    "material": "dirt",
+                    "material": "stone_barrier",
                     "positionX": -975.0,
                     "positionY": 200.0,
                     "rotation": 0,

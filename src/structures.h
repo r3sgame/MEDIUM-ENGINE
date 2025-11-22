@@ -14,7 +14,7 @@
 #include <numeric>
 #include <fstream>
 #include "json.hpp"
-#include "partikel.h"
+#include <thread>
 
 // for convenience
 using json = nlohmann::json;
@@ -38,6 +38,8 @@ using json = nlohmann::json;
 #define CAM_MAX_ZOOM 1.6f
 #define CAM_ZOOM_RATE 1500.0f
 #define CAM_ZOOM_INTERPOLATION 0.2f
+#define CAM_SHAKE_SMALL 2.0f
+#define CAM_SHAKE_LARGE 5.0f
 
 #define COLLISION_MARGIN 0.001f
 #define JITTER_TOLERANCE 0.2f
@@ -78,6 +80,11 @@ using json = nlohmann::json;
 class Debris;
 class Level;
 struct Option;
+
+enum struct OptionType {
+    MENU,
+    LEVEL
+};
 
 class Menu {
 public:
@@ -212,9 +219,48 @@ enum struct InputTypes {
     SKILL
 };
 
+class Emitter {
+    public:
+    Emitter(Shader shader, Vector2 velocityMin, Vector2 velocityMax, Vector2 acceleration, float scaleMin, float scaleMax, float lifetimeMin,
+         float lifetimeMax, int numParticles, Color colorBound1, Color colorBound2)
+          : shader(shader), velocityMax(velocityMax), velocityMin(velocityMin), acceleration(acceleration), scaleMin(scaleMin), scaleMax(scaleMax),
+           lifetimeMin(lifetimeMin), lifetimeMax(lifetimeMax), numParticles(numParticles), colorBound1(colorBound1), colorBound2(colorBound2) {};
+
+    void Start(Vector2 initialPosition, bool flipX, bool flipY);
+    void Update();
+    void Draw();
+
+    private:
+    Shader shader;
+
+    Vector2 velocityMax;
+    Vector2 velocityMin;
+    Vector2 acceleration;
+
+    float scaleMin;
+    float scaleMax;
+
+    float lifetimeMin;
+    float lifetimeMax;
+
+    std::vector<Vector2> positions = {};
+    std::vector<Vector2> velocities = {};
+    std::vector<float> scales = {};
+    std::vector<float> lifetimes = {};
+    std::vector<Color> colors = {};
+
+    int numParticles;
+
+    Color colorBound1;
+    Color colorBound2;
+
+    int flipXMultiplier;
+    int flipYMuliplier;
+};
+
 struct Skill {
     Skill(Vector2 force, Vector2 upHitBox, Vector2 downHitBox, Vector2 forwardHitBox, Vector2 backwardHitBox, float energy, float damage, float mediumCost, float knockback,
-        float windupTime, float activeTime, float recoveryTime, float stunTime, float slowdownFactor, AnimationStates animationState, InputTypes input, Emitter* particles) 
+        float windupTime, float activeTime, float recoveryTime, float stunTime, float slowdownFactor, AnimationStates animationState, InputTypes input, Emitter particles) 
     : force(force), upHitBox(upHitBox), downHitBox(downHitBox), forwardHitBox(forwardHitBox), backwardHitBox(backwardHitBox), energy(energy), damage(damage), mediumCost(mediumCost), knockback(knockback), 
     windupTime(windupTime), activeTime(activeTime), recoveryTime(recoveryTime), stunTime(stunTime), slowdownFactor(slowdownFactor), animationState(animationState), input(input), particles(particles) {}
     
@@ -239,12 +285,14 @@ struct Skill {
 
     AnimationStates animationState;
     InputTypes input;
-    Emitter* particles;
+    Emitter particles;
 };
 
 struct Gun {
-    Gun(float fireTime, int ammo, float damage, float mediumAffinity, float reloadTime, float range, float energy, float knockback, float stunTime, float slowdownFactor) :
-    fireTime(fireTime), maxAmmo(ammo), damage(damage), mediumAffinity(mediumAffinity), reloadTime(reloadTime), range(range), energy(energy), knockback(knockback), stunTime(stunTime), slowdownFactor(slowdownFactor) {}
+    Gun(float fireTime, int ammo, float damage, float mediumAffinity, float reloadTime, float range, float energy, float knockback,
+         float stunTime, float slowdownFactor, Emitter muzzleFlash, Vector2 muzzleFlashPosition) :
+    fireTime(fireTime), maxAmmo(ammo), damage(damage), mediumAffinity(mediumAffinity), reloadTime(reloadTime), range(range), energy(energy),
+     knockback(knockback), stunTime(stunTime), slowdownFactor(slowdownFactor), muzzleFlash(muzzleFlash), muzzleFlashPosition(muzzleFlashPosition) {}
 
     float fireTime;
     int maxAmmo;
@@ -256,6 +304,9 @@ struct Gun {
     float knockback;
     float stunTime;
     float slowdownFactor;
+
+    Emitter muzzleFlash;
+    Vector2 muzzleFlashPosition;
 };
 
 enum struct BodyTypes {
@@ -369,8 +420,10 @@ Vector2 GetCameraPosition(std::vector<Character*> characters, Vector2 initialPos
 Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 initialPosition, CharacterTypes characterType);
 
 struct BodyMaterial {
-    BodyMaterial(Texture2D texture, Texture2D debrisTexture, int textureNumShapes, int debrisTextureNumShapes, float density, float energyCapacity, float debrisEnergyCapacity) :
-    texture(texture), textureNumShapes(textureNumShapes), density(density), energyCapacity(energyCapacity), debrisTexture(debrisTexture), debrisTextureNumShapes(debrisTextureNumShapes), debrisEnergyCapacity(debrisEnergyCapacity) {};
+    BodyMaterial(Texture2D texture, Texture2D debrisTexture, int textureNumShapes, int debrisTextureNumShapes,
+         float density, float energyCapacity, float debrisEnergyCapacity, Emitter emitter) :
+    texture(texture), textureNumShapes(textureNumShapes), density(density), energyCapacity(energyCapacity), debrisTexture(debrisTexture),
+     debrisTextureNumShapes(debrisTextureNumShapes), debrisEnergyCapacity(debrisEnergyCapacity), emitter(emitter) {};
     Texture2D texture;
     Texture2D debrisTexture;
     int textureNumShapes;
@@ -378,11 +431,13 @@ struct BodyMaterial {
     float density;
     float energyCapacity;
     float debrisEnergyCapacity;
+    Emitter emitter;
 };
 
 class DestructibleBody {
 public:
-    DestructibleBody(b2WorldId worldId, BodyMaterial material, Vector2 initialPosition, float initialRotation, bool dynamic, float width, float height, float squareSize);
+    DestructibleBody(b2WorldId worldId, BodyMaterial material, Vector2 initialPosition, float initialRotation, bool dynamic,
+         float width, float height, float squareSize);
     ~DestructibleBody();
 
     void Update();
@@ -410,7 +465,7 @@ public:
     ~Debris();
 
     void Update();
-    void DestroyShape(b2ShapeId shape);
+    virtual void DestroyShape(b2ShapeId shape);
     
     float GetEnergyCapacity() { return energyCapacity; }
     bool IsDestroyed() const { return destroyed; } // Getter for destroyed state
@@ -436,12 +491,18 @@ protected:
 
 class FreeDebris : public Debris {
 public:
-    FreeDebris(b2WorldId worldId, Vector2 initialPosition, float initialRotation, float energyCapacity, b2Polygon polygonShape, Texture2D texture, int textureNumShapes) :
-        Debris(worldId, initialPosition, initialRotation, energyCapacity, polygonShape), texture(texture), textureNumShapes(textureNumShapes) {};
+    FreeDebris(b2WorldId worldId, Vector2 initialPosition, float initialRotation, float energyCapacity, b2Polygon polygonShape, Texture2D texture,
+         int textureNumShapes, Emitter emitter) :
+        Debris(worldId, initialPosition, initialRotation, energyCapacity, polygonShape), texture(texture), textureNumShapes(textureNumShapes),
+         emitter(emitter) {};
     void Draw();
+
 private:
     Texture2D texture;
     int textureNumShapes;
+    Emitter emitter;
+
+    void DestroyShape(b2ShapeId shape) override;
 };
 
 class Level {
@@ -485,6 +546,6 @@ private:
 };
 
 Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds);
-Emitter* LoadParticleEmitter(std::string name);
+Emitter LoadParticleEmitter(std::string name);
 
 #endif // STRUCTURES_H

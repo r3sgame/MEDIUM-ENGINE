@@ -4,6 +4,16 @@
 #include <iostream>
 
 //HELPER FUNCTIONS
+float RandomFloatRange(float min, float max) {
+    if (min > max) {
+        float temp = min;
+        min = max;
+        max = temp;
+    }
+
+    return (float)(rand()) / (float)(RAND_MAX) * (max - min) + min;
+}
+
 bool CheckInput(InputTypes input,  CharacterTypes characterType) {
     if (characterType == CharacterTypes::PLAYER_1) {
         switch (input) {
@@ -196,7 +206,7 @@ json FindObjectByName(const json& jsonArray, const std::string& name) {
     return nullptr;
 }
 
-Emitter* LoadParticleEmitter(std::string name) {
+Emitter LoadParticleEmitter(std::string name) {
     
     // Attempt to parse the emitter from JSON
     try {
@@ -204,106 +214,55 @@ Emitter* LoadParticleEmitter(std::string name) {
         json data = json::parse(f);
         json particleData = FindObjectByName(data["particles"], name);
 
-        EmitterConfig cfg = {0};
-        
-        // --- Successful Load Path ---
+        std::string shaderFilePath = std::string("resources/shaders/") + std::string(GLSL_VERSION) + std::string("/");
 
-        // Basic Properties
-        std::string name = particleData.value("name", "Default Emitter (Fallback)");
-        std::cout << "INFO: Loading emitter: " << name << std::endl;
-        
-        cfg.capacity = particleData.value("count", 300);
-        cfg.emissionRate = (size_t)particleData.value("emissionRate", 100.0f);
-        
-        // Blending
-        bool additive = particleData.value("additiveBlending", false);
-        cfg.blendMode = additive ? BLEND_ADDITIVE : BLEND_ALPHA;
-        
-        // Lifetime
-        float lifetime = particleData.value("lifetime", 1.0f);
-        cfg.age = (FloatRange){.min = lifetime, .max = lifetime + 0.5f};
-        
-        // Color
-        if (particleData.contains("color") && particleData.at("color").is_object()) {
-            const json& colorObj = particleData.at("color");
-            float r = colorObj.value("r", 0.0f);
-            float g = colorObj.value("g", 0.0f);
-            float b = colorObj.value("b", 1.0f);
-            float a = colorObj.value("a", 1.0f);
+        Shader shader = LoadShader(0, (shaderFilePath + particleData["shader"].get<std::string>()).c_str());
 
-            cfg.startColor = (Color){
-                (unsigned char)(r * 255.0f), (unsigned char)(g * 255.0f), 
-                (unsigned char)(b * 255.0f), (unsigned char)(a * 255.0f)
-            };
-            cfg.endColor = (Color){cfg.startColor.r, cfg.startColor.g, cfg.startColor.b, 0};
-        } else {
-            cfg.startColor = BLUE;
-            cfg.endColor = (Color){0, 0, 255, 0};
-        }
-        
-        // Texture
-        int size = particleData.value("size", 10);
-        cfg.texture = CreateCircleParticleTexture(size, WHITE); 
-        
-        // Origin / Offset
-        cfg.origin = (Vector2){particleData.value("offsetX", 0.0f), particleData.value("offsetY", 0.0f)};
-        
-        // Velocity and Angle Translation
-        float velXMin = particleData.value("velocityXMin", -100.0f);
-        float velXMax = particleData.value("velocityXMax", 100.0f);
-        float velYMin = particleData.value("velocityYMin", -100.0f);
-        float velYMax = particleData.value("velocityYMax", 100.0f);
-        
-        float max_vx_abs = std::max(std::fabs(velXMin), std::fabs(velXMax));
-        float max_vy_abs = std::max(std::fabs(velYMin), std::fabs(velYMax));
-        float maxSpeed = std::sqrt(max_vx_abs * max_vx_abs + max_vy_abs * max_vy_abs);
+        Vector2 velocityMax = (Vector2){particleData["velocityXMax"].get<float>(), particleData["velocityYMax"].get<float>()};
+        Vector2 velocityMin = (Vector2){particleData["velocityXMin"].get<float>(), particleData["velocityYMin"].get<float>()};
 
-        cfg.velocity = (FloatRange){.min = 0.0f, .max = maxSpeed};
-        cfg.velocityAngle = (FloatRange){.min = 0.0f, .max = 360.0f};
-        cfg.direction = (Vector2){0, -1};
+        Vector2 acceleration = (Vector2){particleData["accelerationX"].get<float>(), particleData["accelerationY"].get<float>()};
 
-        // External Acceleration
-        cfg.externalAcceleration = (Vector2){particleData.value("accelerationX", 0.0f), particleData.value("accelerationY", 0.0f)};
+        float lifetimeMin = particleData["lifetimeMin"].get<float>();
+        float lifetimeMax = particleData["lifetimeMax"].get<float>();
 
-        // Initialize and return the loaded Emitter
-        Emitter *emitter = Emitter_New(cfg);
+        int numParticles = particleData["numParticles"].get<int>();
+
+        float scaleMin = particleData["scaleMin"].get<float>();
+        float scaleMax = particleData["scaleMax"].get<float>();
+
+        json colorBound1Data = particleData["colorBound1"];
+        Color colorBound1 = (Color){colorBound1Data["r"].get<unsigned char>(), colorBound1Data["g"].get<unsigned char>(),
+             colorBound1Data["b"].get<unsigned char>(), colorBound1Data["a"].get<unsigned char>()};
+
+        json colorBound2Data = particleData["colorBound2"];
+        Color colorBound2 = (Color){colorBound2Data["r"].get<unsigned char>(), colorBound2Data["g"].get<unsigned char>(),
+             colorBound2Data["b"].get<unsigned char>(), colorBound2Data["a"].get<unsigned char>()};
+        
+        Emitter emitter = Emitter(shader, velocityMin, velocityMax, acceleration, scaleMin,
+             scaleMax, lifetimeMin, lifetimeMax, numParticles, colorBound1, colorBound2);
+
         return emitter;
 
     } catch (const std::exception& e) {
         // CATCH-ALL BLOCK: Inline implementation of the default emitter logic
-        std::cerr << "Load particle failed (" << e.what() << "). Initializing hardcoded DEFAULT emitter." << std::endl; // ⚠️ cerr/cout
+        std::cerr << "Load particle failed (" << e.what() << "). Initializing blank emitter." << std::endl;
         
-        // Define and initialize the default configuration directly
-        EmitterConfig defaultCfg = {0};
+        Shader shader = LoadShader(0, 0);
+
+        Vector2 velocityMax = (Vector2){0, 0};
+        Vector2 velocityMin = (Vector2){0, 0};
+        Vector2 acceleration = (Vector2){0, 0};
+        float scaleMin = 0;
+        float scaleMax = 0;
+        float lifetimeMin = 0;
+        float lifetimeMax = 0;
+        int numParticles = 0;
+        Color colorBound1 = (Color){0, 0, 0, 0};
+        Color colorBound2 = (Color){0, 0, 0, 0};
         
-        // Default Texture (5x5 white circle)
-        Image image = GenImageColor(5, 5, BLANK);
-        ImageDrawCircle(&image, 2, 2, 2, WHITE);
-        defaultCfg.texture = LoadTextureFromImage(image);
-        UnloadImage(image);
-
-        // General Settings
-        defaultCfg.capacity = 100;
-        defaultCfg.emissionRate = 50;
-        defaultCfg.blendMode = BLEND_ALPHA;
-        defaultCfg.origin = (Vector2){400, 300}; 
-
-        // Lifetime
-        defaultCfg.age = (FloatRange){.min = 1.0f, .max = 2.0f};
-
-        // Movement (Slight upward drift)
-        defaultCfg.direction = (Vector2){0, -1};
-        defaultCfg.velocity = (FloatRange){.min = 50.0f, .max = 100.0f};
-        defaultCfg.velocityAngle = (FloatRange){.min = -15.0f, .max = 15.0f}; 
-        defaultCfg.externalAcceleration = (Vector2){0.0f, 0.0f};
-
-        // Color Fade (White fade)
-        defaultCfg.startColor = (Color){255, 255, 255, 200};
-        defaultCfg.endColor = (Color){255, 255, 255, 0};
-        
-        // Initialize and return the default Emitter
-        Emitter *emitter = Emitter_New(defaultCfg);
-        Emitter_Start(emitter);
+        Emitter emitter = Emitter(shader, velocityMin, velocityMax, acceleration, scaleMin,
+             scaleMax, lifetimeMin, lifetimeMax, numParticles, colorBound1, colorBound2);
         return emitter;
     }
 }
@@ -347,9 +306,13 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
         float gunStunTime = gunData["stunTime"].get<float>();
         float gunSlowdownFactor = gunData["slowdownFactor"].get<float>();
 
+        Emitter muzzleFlash = LoadParticleEmitter(gunData["muzzleFlash"]);
+        Vector2 muzzleFlashPosition = (Vector2){gunData["muzzleFlashPositionX"].get<float>(), gunData["muzzleFlashPositionY"].get<float>()};
+
         std::cout << "Character: Loaded Gun" << std::endl;
 
-        Gun gun(fireTime, ammo, gunDamage, gunMediumAffinity, reloadTime, range, gunEnergy, gunKnockback, gunStunTime, gunSlowdownFactor);
+        Gun gun(fireTime, ammo, gunDamage, gunMediumAffinity, reloadTime,
+             range, gunEnergy, gunKnockback, gunStunTime, gunSlowdownFactor, muzzleFlash, muzzleFlashPosition);
 
         // Load SpriteSettings
         json spriteSettingsData = FindObjectByName(data["spriteSettings"], characterData["spriteSettings"]);
@@ -380,6 +343,7 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
         shaders[AnimationStates::RECOVERY] = LoadShader(0, (shaderFilePath + shaderData["recovery"].get<std::string>()).c_str());
         shaders[AnimationStates::GUN] = LoadShader(0, (shaderFilePath + shaderData["gun"].get<std::string>()).c_str());
         shaders[AnimationStates::STUN] = LoadShader(0, (shaderFilePath + shaderData["stun"].get<std::string>()).c_str());
+        shaders[AnimationStates::CHARGE] = LoadShader(0, (shaderFilePath + shaderData["charge"].get<std::string>()).c_str());
 
         std::cout << "Character: Loaded Frame Counts" << std::endl;
 
@@ -419,10 +383,11 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
                 InputTypes input = ( InputTypes)skillData["input"].get<int>();
 
                 //Particles
-                Emitter* destroyedParticles = LoadParticleEmitter("material_burst_default"); 
+                Emitter particles = LoadParticleEmitter(skillData["particle"].get<std::string>()); 
+                std::cout << "Character: Loaded Particle" << std::endl;
 
                 skills.push_back(Skill(force, upHitBox, downHitBox, forwardHitBox, backwardHitBox, skillEnergy, skillDamage, 
-                    mediumCost, skillKnockback, skillWindupTime, skillActiveTime, skillRecoveryTime, skillStunTime, skillSlowdownFactor, animationState, input, destroyedParticles));
+                    mediumCost, skillKnockback, skillWindupTime, skillActiveTime, skillRecoveryTime, skillStunTime, skillSlowdownFactor, animationState, input, particles));
             }
         }
         
@@ -504,8 +469,11 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
     stunTime = 0.5f;
     slowdownFactor = 2.0f;
     mediumAffinity = 5;
+    Emitter muzzleFlash = LoadParticleEmitter("blank");
+    Vector2 muzzleFlashPosition = {0.0f, 0.0f};
 
-    Gun defaultGun(fireRate, maxAmmo, damage, mediumAffinity, reloadTime, range, energy, knockback, stunTime, slowdownFactor);
+    Gun defaultGun(fireRate, maxAmmo, damage, mediumAffinity, reloadTime, range, energy, knockback,
+         stunTime, slowdownFactor, muzzleFlash, muzzleFlashPosition);
     
     // Player parameters
     Vector2 size = {60.0f, 120.0f};
@@ -545,11 +513,11 @@ Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds) {
 
         for (int i = 0; i < characterLoadIds.size(); i++) {
             if (i == 0) {
-                characters.push_back(LoadCharacter(worldId, characterLoadIds[i], Vector2{levelData["player1PositionX"].get<float>(), levelData["player1PositionY"].get<float>()},
-                CharacterTypes::PLAYER_1));
+                characters.push_back(LoadCharacter(worldId, characterLoadIds[i], Vector2{levelData["player1PositionX"].get<float>(),
+                     levelData["player1PositionY"].get<float>()}, CharacterTypes::PLAYER_1));
             } else {
-                characters.push_back(LoadCharacter(worldId, characterLoadIds[i], Vector2{levelData["player2PositionX"].get<float>(), levelData["player2PositionY"].get<float>()},
-                CharacterTypes::PLAYER_2));
+                characters.push_back(LoadCharacter(worldId, characterLoadIds[i], Vector2{levelData["player2PositionX"].get<float>(),
+                     levelData["player2PositionY"].get<float>()}, CharacterTypes::PLAYER_2));
             }
         }
         
@@ -573,10 +541,13 @@ Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds) {
                 float density = materialData["density"].get<float>();
                 float energyCapacity = materialData["energyCapacity"].get<float>();
                 float debrisEnergyCapacity = materialData["debrisEnergyCapacity"].get<float>();
+                Emitter emitter = LoadParticleEmitter(materialData["particle"].get<std::string>());
 
-                BodyMaterial material(texture, debrisTexture, textureNumShapes, debrisTextureNumShapes, density, energyCapacity, debrisEnergyCapacity);
+                BodyMaterial material(texture, debrisTexture, textureNumShapes, debrisTextureNumShapes,
+                     density, energyCapacity, debrisEnergyCapacity, emitter);
 
-                destructibleBodies.push_back(new DestructibleBody(worldId, material, position, rotation * (PI / 180), dynamic, width, height, squareSize));
+                destructibleBodies.push_back(new DestructibleBody(worldId, material, position, rotation * (PI / 180), dynamic, width,
+                 height, squareSize));
         }
 
         std::cout << "Level: Loaded Destructible Bodies" << std::endl;
@@ -610,8 +581,9 @@ Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds) {
             
             Texture2D debrisTexture = LoadTexture(materialData["debrisTexture"].get<std::string>().c_str());
             int textureNumShapes = materialData["debrisTextureNumShapes"].get<int>();
+            Emitter emitter = LoadParticleEmitter(materialData["emitter"].get<std::string>());
 
-            debrisInstances.push_back(new FreeDebris(worldId, position, rotation, energyCapacity, polygon, debrisTexture, textureNumShapes));
+            debrisInstances.push_back(new FreeDebris(worldId, position, rotation, energyCapacity, polygon, debrisTexture, textureNumShapes, emitter));
         }
 
         std::cout << "Level: Loaded Debris Instances" << std::endl;
@@ -670,8 +642,9 @@ Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds) {
     //destructibleBodies.push_back(new DestructibleBody(worldId, Vector2{0, 0}, 0, true, 1, 1, 100, 100, 1));
     //Emitter* destroyedParticles = LoadParticleEmitter("material_burst_default");
 
-    //Default material
-    BodyMaterial defaultMaterial = BodyMaterial(LoadTexture("resources/sprites/materials/dirt.png"), LoadTexture("resources/sprites/materials/dirt.png"), 1, 1, 1.0f, 1.0f, 1.0f);
+    //Default destructible body
+    Emitter blankEmitter = LoadParticleEmitter("material_burst_default");
+    BodyMaterial defaultMaterial = BodyMaterial(LoadTexture("resources/sprites/materials/dirt.png"), LoadTexture("resources/sprites/materials/dirt.png"), 1, 1, 1.0f, 1.0f, 1.0f, blankEmitter);
     destructibleBodies.push_back(new DestructibleBody(worldId, defaultMaterial, (Vector2){250.0f, 400.0f}, 0.0f, false, 5000.0f, 500.0f, 100.0f));
 
     Level *defaultLevel = new Level(worldId, identityShader, characters, destructibleBodies, debrisInstances, backgroundElements, foregroundElements);
@@ -700,7 +673,7 @@ void Menu::AddOption(Option option) {
     optionPositions.push_back((Vector2){buttonPosition.x, buttonPosition.y + optionPositions.size() * buttonSpacing});
 }
 
-    void Menu::LoadMenu() {
+void Menu::LoadMenu() {
     loaded = true;
 }
 
@@ -738,7 +711,7 @@ void Menu::Update() {
             }
         
             // Determine if hovered
-            if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){optionPositions[i].x, optionPositions[i].y, options[i].text.length() * TEXT_SIZE, TEXT_SIZE})) {
+            if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){optionPositions[i].x, optionPositions[i].y, (float) (options[i].text.length() * TEXT_SIZE, TEXT_SIZE)})) {
                 options[i].hovered = true;
             } else {
                 options[i].hovered = false;
@@ -813,7 +786,7 @@ Character::~Character() {
     body = b2BodyId{}; // Reset the ID
     for (int i = 0; i < skills.size(); i++)
     {
-        Emitter_Free(skills[i].particles);
+        skills[i].particles.~Emitter();
     }
     
 }
@@ -899,7 +872,7 @@ void Character::Update() {
         // Check for skill input
         if (CheckInput(InputTypes::SKILL, characterType)) {
             for (int i = 0; i < skills.size(); i++) {
-                if (CheckInput(skills[i].input, characterType) && medium >= skills[i].mediumCost) {
+                if (CheckInput(skills[i].input, characterType) && medium >= skills[i].mediumCost && !states[CharacterStates::SKILL]) {
                     StartSkill(skills[i]);
                     break;
                 }
@@ -951,6 +924,8 @@ void Character::Draw() {
         animationState = AnimationStates::STUN;
     } else if (states[CharacterStates::CHARGE]) {
         animationState = AnimationStates::CHARGE;
+    }  else if (states[CharacterStates::SKILL]) {
+        animationState = activeSkill.animationState;
     } else if (states[CharacterStates::GUN]) {
         animationState = AnimationStates::GUN;
     } else if (states[CharacterStates::WEAPON] && timers[CharacterStates::WEAPON] >= weapon.recoveryTime + weapon.activeTime) {
@@ -963,8 +938,6 @@ void Character::Draw() {
         animationState = AnimationStates::JUMP;
     } else if (CheckInput(InputTypes::LEFT, characterType) || CheckInput(InputTypes::RIGHT, characterType)) {
         animationState = AnimationStates::RUN;
-    } else if (states[CharacterStates::SKILL]) {
-        animationState = activeSkill.animationState;
     } else {
         animationState = AnimationStates::IDLE;
     }
@@ -980,13 +953,23 @@ void Character::Draw() {
     DrawTextureEx(spriteSet.sprites[currentFrame + selectedIndex], (Vector2){position.x - size.x / 2.0f + spriteSet.offset.x, 
         position.y - size.y / 2.0f + spriteSet.offset.y}, 0.0f, rect.height * spriteSet.scale / spriteSet.sprites[0].height, WHITE);
     EndShaderMode();
-    
+
     // Update animation frame
     frameTimer += GetFrameTime();
     if (frameTimer >= 1.0f / spriteSet.framesPerSecond) {
         frameTimer = 0.0f;
-
         currentFrame = (currentFrame + 1) % spriteSet.frameCounts[animationState];
+    }
+
+    //Draw skill particles
+    //if (states[CharacterStates::SKILL]) {
+        activeSkill.particles.Update();
+        activeSkill.particles.Draw();
+    //}
+
+    if (states[CharacterStates::GUN]) {
+        gun.muzzleFlash.Update();
+        gun.muzzleFlash.Draw();
     }
 }
 
@@ -1056,6 +1039,11 @@ void Character::Shoot() {
     ammo -= 1;
     timers[CharacterStates::GUN] = gun.fireTime;
 
+    int muzzleFlashOrientation = 1;
+    if (!isFacingRight) muzzleFlashOrientation = -1;
+
+    gun.muzzleFlash.Start(position + (Vector2){gun.muzzleFlashPosition.x * muzzleFlashOrientation, gun.muzzleFlashPosition.y}, !isFacingRight, false);
+
     b2Vec2 origin;
     b2Vec2 translation;
 
@@ -1095,9 +1083,13 @@ void Character::StartSkill(Skill skill) {
     timers[CharacterStates::SKILL] = skill.windupTime + skill.activeTime + skill.recoveryTime;
 
     activeSkill = skill;
+
+    // Draw particles
+    activeSkill.particles.Start(position, !isFacingRight, false); // Flip particles in x-direction based on face direction, do not flip y
 }
 
 void Character::ProcessSkill() {
+
     // Create hitboxes
     b2AABB upHitBox;
     b2AABB downHitBox;
@@ -1288,7 +1280,19 @@ void Level::Update() {
             }
         }
     }
-    
+
+    // Determine screen shake
+    Vector2 screenShake = {0.0f, 0.0f};
+
+    if (characters[0]->IsShooting() || characters[1]->IsShooting()) {
+        // Random screen shake vector
+        screenShake = {RandomFloatRange(-CAM_SHAKE_SMALL, CAM_SHAKE_SMALL), RandomFloatRange(-CAM_SHAKE_SMALL, CAM_SHAKE_SMALL)};
+    }
+
+    if (characters[0]->IsUsingSkill() || characters[1]->IsUsingSkill() || characters[0]->IsStunned() || characters[1]->IsStunned()) {
+        // Random screen shake vector
+        screenShake = {RandomFloatRange(-CAM_SHAKE_LARGE, CAM_SHAKE_LARGE), RandomFloatRange(-CAM_SHAKE_LARGE, CAM_SHAKE_LARGE)};
+    }
     
     if (characters.size() < 2) {
         Vector2 newCameraPosition = (Vector2){ cameraPosition.x + CAM_X_INTERPOLATION * (characters[0]->GetPosition().x - cameraPosition.x), 
@@ -1296,7 +1300,7 @@ void Level::Update() {
         camera.target = newCameraPosition;
     } else {
         Vector2 averageCameraPosition = (Vector2){characters[0]->GetPosition().x + characters[1]->GetPosition().x, characters[0]->GetPosition().y + characters[1]->GetPosition().y} / 2.0f;
-        camera.target = averageCameraPosition;
+        camera.target = averageCameraPosition + screenShake;
 
         //Get distance between players
         float distance = Vector2Distance(characters[0]->GetPosition(), characters[1]->GetPosition());
@@ -1380,9 +1384,9 @@ void Level::Update() {
 
 // DESTRUCTIBLE BODY
 
-DestructibleBody::DestructibleBody(b2WorldId worldId, BodyMaterial material, Vector2 initialPosition, float initialRotation, bool dynamic, float width, float height, float squareSize)
-    : world(worldId), material(material), triangles(0), position(initialPosition),
-     rotation(initialRotation) // Initialize triangles to 0, will be calculated
+DestructibleBody::DestructibleBody(b2WorldId worldId, BodyMaterial material, Vector2 initialPosition, float initialRotation,
+     bool dynamic, float width, float height, float squareSize)
+    : world(worldId), material(material), triangles(0), position(initialPosition), rotation(initialRotation)
 {
     // Convert overall dimensions from pixels to meters
     float boxWidthMeters = width * METERS_PER_PIXEL;
@@ -1756,6 +1760,10 @@ void DestructibleBody::Draw() {
     rlEnd();
 
     free(shapes);
+    
+    //Update emitters
+    material.emitter.Update();
+    material.emitter.Draw();
 }
 
 void DestructibleBody::DestroyShape(b2ShapeId shape) {
@@ -1782,6 +1790,9 @@ void DestructibleBody::DestroyShape(b2ShapeId shape) {
 
     debrisInstances.push_back(new Debris(world, debrisPosition, rotation * (180.0f / PI), material.debrisEnergyCapacity, debrisPolygon));
     b2DestroyShape(shape, true);
+    
+    // Start emitter
+    material.emitter.Start(debrisPosition, false, false);
 }
 
 // DEBRIS
@@ -1878,6 +1889,9 @@ void Debris::Update() {
 }
 
 void FreeDebris::Draw() {
+    emitter.Update();
+    emitter.Draw();
+
     b2Vec2 b2Position = b2Body_GetPosition(body);
 
     b2Rot rotationData = b2Body_GetTransform(body).q;
@@ -1914,6 +1928,12 @@ void Debris::DestroyShape(b2ShapeId shape) {
     b2DestroyShape(shape, false);
 }
 
+void FreeDebris::DestroyShape(b2ShapeId shape) {
+    destroyed = true;
+    b2DestroyShape(shape, false);
+    emitter.Start(position, false, false);
+}
+
 // SPRITE SETTINGS
 SpriteSettings::SpriteSettings(Vector2 spriteOffset, std::string folderName, float spriteScale, float framesPerSecond, std::unordered_map<AnimationStates, int> frameCounts,
     std::unordered_map<AnimationStates, Shader> shaders) 
@@ -1940,4 +1960,68 @@ SpriteSettings::SpriteSettings(Vector2 spriteOffset, std::string folderName, flo
         SetTextureFilter(texture, TEXTURE_FILTER_BILINEAR);
         sprites.push_back(texture);
     }
+}
+
+void Emitter::Start(Vector2 initialPosition, bool flipX, bool flipY) {
+    // Clear all particle arrays
+    positions.clear();
+    velocities.clear();
+    scales.clear();
+    lifetimes.clear();
+    colors.clear();
+
+    if (flipX) {
+        flipXMultiplier = -1;
+    } else {
+        flipXMultiplier = 1;
+    }
+
+    if (flipY) {
+        flipYMuliplier = -1;
+    } else {
+        flipYMuliplier = 1;
+    }
+
+    for (int i = 0; i < numParticles; i++)
+    {
+        positions.push_back(initialPosition);
+        velocities.push_back((Vector2){RandomFloatRange(velocityMin.x, velocityMax.x), RandomFloatRange(velocityMin.y, velocityMax.y)});
+        scales.push_back(RandomFloatRange(scaleMin, scaleMax));
+        lifetimes.push_back(RandomFloatRange(lifetimeMin, lifetimeMax));
+        colors.push_back((Color){(unsigned char) RandomFloatRange(colorBound1.r, colorBound2.r), (unsigned char) RandomFloatRange(colorBound1.g, colorBound2.g), 
+            (unsigned char )RandomFloatRange(colorBound1.b, colorBound2.b), (unsigned char) RandomFloatRange(colorBound1.a, colorBound2.a)});
+    }
+}
+
+void Emitter::Update() {
+    if (positions.size() == 0) {
+        return;
+    }
+    
+    // Update particle positions
+    for (int i = 0; i < numParticles; i++) {
+        if (lifetimes[i] > 0.0f) {
+            float dt = GetFrameTime();
+
+            positions[i].x += velocities[i].x * dt * flipXMultiplier;
+            positions[i].y += velocities[i].y * dt * flipYMuliplier;
+            velocities[i].x += acceleration.x * dt * flipXMultiplier;
+            velocities[i].y += acceleration.y * dt * flipYMuliplier;
+            lifetimes[i] -= dt;
+        }
+    }
+}
+
+void Emitter::Draw() {
+    if (positions.size() == 0) {
+        return;
+    }
+
+    BeginShaderMode(shader);
+    for (int i = 0; i < numParticles; i++) {
+        if (lifetimes[i] > 0.0f) {
+            DrawCircle(positions[i].x, positions[i].y, scales[i], colors[i]);
+        }
+    }
+    EndShaderMode();
 }

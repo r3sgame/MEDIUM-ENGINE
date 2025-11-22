@@ -1,4 +1,3 @@
-#define LIBPARTIKEL_IMPLEMENTATION
 #include "raylib.h"
 #include "structures.h" // Includes Box2D header and unit conversion macros
 #include <string>

@@ -10,7 +10,7 @@ uniform sampler2D texture0;
 // Output fragment color
 out vec4 finalColor;
 
-const vec4 color = vec4(0.07, 0.12, 0.13, 0.4);   // Chosen color to overlay
+const vec4 color = vec4(0.07, 0.12, 0.13, 0.55);   // Chosen color to overlay
 
 void main()
 {
