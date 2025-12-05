@@ -189,8 +189,8 @@
             "accelerationY": 4000.0,
             "scaleMin": 10.0,
             "scaleMax": 20.0,
-            "lifetimeMin": 0.5,
-            "lifetimeMax": 0.75,
+            "lifetimeMin": 1.0,
+            "lifetimeMax": 2.0,
             "numParticles": 100,
             "colorBound1": {
                 "r": 94.0,
@@ -216,8 +216,8 @@
             "accelerationY": 4000.0,
             "scaleMin": 10.0,
             "scaleMax": 20.0,
-            "lifetimeMin": 0.01,
-            "lifetimeMax": 0.2,
+            "lifetimeMin": 1.0,
+            "lifetimeMax": 2.0,
             "numParticles": 100,
             "colorBound1": {
                 "r": 94.0,
@@ -313,6 +313,74 @@
         }
     ],
 
+    "menus": [
+        {
+            "name": "title_screen",
+            "shader": "",
+            "optionImagePositionX": 0.0,
+            "optionImagePositionY": 0.0,
+            "optionSubtextPositionX": 0.0,
+            "optionSubtextPositionY": 0.0,
+            "options": [
+                {
+                    "text": "Start",
+                    "positionX": 0.0,
+                    "positionY": 100.0,
+                    "scale": 64.0,
+                    "subtext": "",
+                    "screenToLoad": "village",
+                    "isLevel": true,
+                    "image": "",
+                    "imageScale": 1.0,
+                    "centered": true,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    }
+                }
+            ],
+            "textElements": [
+                {
+                    "text": "MEDIUM",
+                    "positionX": 0.0,
+                    "positionY": -60.0,
+                    "scale": 128.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    },
+                    "centered": true
+                },
+                {
+                    "text": "Portfolio Demo",
+                    "positionX": 0.0,
+                    "positionY": 50.0,
+                    "scale": 32.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    },
+                    "centered": true
+                }
+            ],
+            "imageElements": [
+                {
+                    "texture": "placeholder.png",
+                    "positionX": 0.0,
+                    "positionY": 0.0,
+                    "scale": 1.0,
+                    "centered": true
+                }
+            ]
+        }
+    ],
+
     "levels": [
         {
             "name": "village",
@@ -371,7 +439,7 @@
                     "rotation": 0,
                     "width": 2000.0,
                     "height": 50.0,
-                    "squareSize": 20
+                    "squareSize": 100
                 },
                 {
                     "dynamic": false,
@@ -401,7 +469,7 @@
                     "rotation": 0,
                     "width": 500.0,
                     "height": 50.0,
-                    "squareSize": 20
+                    "squareSize": 100
                 },
                 {
                     "dynamic": false,
@@ -411,7 +479,7 @@
                     "rotation": 0,
                     "width": 500.0,
                     "height": 50.0,
-                    "squareSize": 20
+                    "squareSize": 100
                 },
                 {
                     "dynamic": false,

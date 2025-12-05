@@ -4,23 +4,11 @@
 
 int main() {
     // Initialization
-    SetConfigFlags(FLAG_MSAA_4X_HINT);
-    SetConfigFlags(FLAG_VSYNC_HINT);
-
-    SetTraceLogLevel(LOG_WARNING);
-
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MEDIUM");
-    ToggleFullscreen();
-    
-    std::vector<std::string> characterPointers;
-    characterPointers.push_back("water");
-    characterPointers.push_back("water");
-
-    Level* testLevel = LoadLevel("village", characterPointers);
+    GameInstance game("title_screen");
 
     // Main game loop
     while (!WindowShouldClose()) {
-        testLevel->Update();
+        game.Update();
     }
 
     // De-Initialization

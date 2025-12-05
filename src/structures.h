@@ -56,14 +56,15 @@ using json = nlohmann::json;
 #define TEXT_COLOR Color{ 255, 255, 255, 255 }
 #define SUBTEXT_COLOR Color{ 128, 128, 128, 255 }
 #define HOVER_COLOR Color{ 255, 0, 0, 255 }
+#define HEALTH_COLOR Color{ 0, 255, 0, 122 }
+#define MEDIUM_COLOR Color{ 0, 0, 255, 122 }
 
-#define TITLE_SIZE 64
-#define TEXT_SIZE 32
-#define SUBTEXT_SIZE 16
+#define HOVER_ALPHA_SHIFT 0.5f
+#define SUBTEXT_SIZE 32
+#define PAUSE_TITLE_SIZE 64
+#define PAUSE_OPTION_SPACING 60
 
-#define TITLE_SPACING 64
-#define TEXT_SPACING 32
-#define SUBTEXT_SPACING 16
+#define DEFAULT_FONT "resources/fonts/ScienceGothic-Light.ttf"
 
 #define DEBUG 1
 
@@ -80,45 +81,42 @@ using json = nlohmann::json;
 class Debris;
 class Level;
 struct Option;
+class GameInstance;
 
 enum struct OptionType {
     MENU,
     LEVEL
 };
 
-class Menu {
+struct TextElement {
 public:
-    Menu(std::string title, bool isPauseMenu, float buttonSpacing, Vector2 titlePosition, Vector2 buttonPosition, Vector2 subtextPosition, Vector2 imagePosition);
-    Menu(std::string title, bool isPauseMenu, float buttonSPacing, Vector2 titlePosition, Vector2 buttonPosition, Vector2 subtextPosition);
+    TextElement(std::string text, Vector2 position, float scale, Color color, bool centered) : text(text), position(position), scale(scale), color(color), centered(centered) {};
 
-    void Update();
-    void AddOption(Option option);
-    void LoadMenu();
-    void UnloadMenu();
-
-private:
-    std::string title;
-    bool isPauseMenu;
-    std::vector<Option> options;
-    std::vector<Vector2> optionPositions;
-
-    float buttonSpacing;
-
-    Vector2 titlePosition;
-    Vector2 buttonPosition;
-    Vector2 subtextPosition;
-    Vector2 imagePosition;
-
-    bool drawImages;
-    bool loaded;
+    std::string text;
+    Vector2 position;
+    float scale;
+    Color color;
+    bool centered;
 };
+
+struct ImageElement {
+public:
+    ImageElement(Texture2D texture, Vector2 position, float scale, bool centered) : texture(texture), position(position), scale(scale), centered(centered) {};
+
+    Texture2D texture;
+    Vector2 position;
+    float scale;
+    bool centered;
+};
+
 
 struct Option {
 public:
-    Option(std::string text, std::string subtext, Texture2D image, Menu* menuToLoad);
-    Option(std::string text, std::string subtext, Texture2D image, Level* levelToLoad);
+    Option(Vector2 position, float scale, std::string text, std::string subtext, Texture2D image, float imageScale, std::string screenToLoad, bool isLevel, bool centered, Color color)
+     : position(position), scale(scale), text(text), subtext(subtext), image(image), isLevel(isLevel), screenToLoad(screenToLoad), centered(centered), color(color) {};
 
-    void Select(bool isPauseMenu);
+    Vector2 position;
+    float scale;
 
     bool hovered = false;
     
@@ -126,9 +124,41 @@ public:
     std::string subtext;
     Texture2D image;
     
-    int optionType;
-    Menu* menuToLoad;
-    Level* levelToLoad;
+    std::string screenToLoad;
+    bool isLevel;
+
+    bool centered;
+    Color color;
+};
+
+class Menu {
+public:
+    Menu(GameInstance* gameInstance, std::vector<Option> options, std::vector<TextElement> textElements,
+        std::vector<ImageElement> imageElements, Vector2 optionSubtextPosition, Vector2 optionImagePosition) :
+        gameInstance(gameInstance), options(options), textElements(textElements), imageElements(imageElements), camera({ 0 }),
+        optionSubtextPosition(optionSubtextPosition), optionImagePosition(optionImagePosition), loaded(false), font(LoadFont(DEFAULT_FONT)) {};
+
+    void Update();
+    void EnterMenu();
+    void ExitMenu();
+
+    bool IsLoaded() { return loaded; }
+
+private:
+    GameInstance* gameInstance;
+
+    std::vector<Option> options;
+    std::vector<TextElement> textElements;
+    std::vector<ImageElement> imageElements;
+
+    Vector2 optionSubtextPosition;
+    Vector2 optionImagePosition;
+
+    bool loaded;
+
+    Camera2D camera;
+
+    Font font;
 };
 
 enum struct AnimationStates {
@@ -216,7 +246,8 @@ enum struct InputTypes {
     ATTACK,
     SHOOT,
     CHARGE,
-    SKILL
+    SKILL,
+    PAUSE
 };
 
 class Emitter {
@@ -507,10 +538,10 @@ private:
 
 class Level {
 public:
-    Level(b2WorldId worldId, Shader postProcessingShader, std::vector<Character*> characters, std::vector<DestructibleBody*> destructibleBodies, 
+    Level(GameInstance* gameInstance, b2WorldId worldId, Shader postProcessingShader, std::vector<Character*> characters, std::vector<DestructibleBody*> destructibleBodies, 
         std::vector<FreeDebris*> freeDebrisInstances, std::vector<SpriteElement> backgroundElements, std::vector<SpriteElement> foregroundElements)
-     : world(worldId), postProcessingShader(postProcessingShader), camera({ 0 }), characters(characters), destructibleBodies(destructibleBodies), freeDebrisInstances(freeDebrisInstances), 
-     backgroundElements(backgroundElements), foregroundElements(foregroundElements) {
+     : gameInstance(gameInstance), world(worldId), postProcessingShader(postProcessingShader), camera({ 0 }), characters(characters), destructibleBodies(destructibleBodies), freeDebrisInstances(freeDebrisInstances), 
+     backgroundElements(backgroundElements), foregroundElements(foregroundElements), font(LoadFont(DEFAULT_FONT)) {
         camera.target = { 0.0f, 0.0f };
         camera.offset = { (float)SCREEN_WIDTH / 2, (float)SCREEN_HEIGHT / 2 };
         camera.rotation = 0.0f;
@@ -528,6 +559,7 @@ public:
     bool IsPaused() const { return paused; }
 
 private:
+    GameInstance* gameInstance;
     b2WorldId world;
     Camera2D camera;
 
@@ -541,11 +573,29 @@ private:
     std::vector<SpriteElement> backgroundElements;
     std::vector<SpriteElement> foregroundElements;
 
+    Font font;
+
     bool loaded = true;
     bool paused = false;
 };
 
-Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds);
+class GameInstance {
+public:
+    GameInstance(std::string startingMenu);
+    Menu* currentMenu;
+    Level* currentLevel;
+    std::string startingMenu;
+
+    Font font;
+
+    void Update();
+    void SetMenu(std::string name);
+    void SetLevel(std::string name, std::vector<std::string> characterLoadIds);
+};
+
+// JSON Loaders
+Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::string> characterLoadIds);
 Emitter LoadParticleEmitter(std::string name);
+Menu* LoadMenu(std::string name, GameInstance* gameInstance);
 
 #endif // STRUCTURES_H

@@ -104,6 +104,7 @@
 		"numbers": "cpp",
 		"text_encoding": "cpp",
 		"cinttypes": "cpp",
-		"variant": "cpp"
+		"variant": "cpp",
+		"semaphore": "cpp"
 	}
 }

@@ -3,7 +3,6 @@
 #include "box2d/id.h"
 #include <iostream>
 
-//HELPER FUNCTIONS
 float RandomFloatRange(float min, float max) {
     if (min > max) {
         float temp = min;
@@ -31,6 +30,8 @@ bool CheckInput(InputTypes input,  CharacterTypes characterType) {
                 return IsKeyDown(KEY_N);
             case InputTypes::SHOOT:
                 return IsKeyDown(KEY_M);
+            case InputTypes::PAUSE:
+                return IsKeyPressed(KEY_ESCAPE);
             default:
                 return false;
         }
@@ -56,6 +57,15 @@ bool CheckInput(InputTypes input,  CharacterTypes characterType) {
     }
 
     return false;
+}
+
+void DrawLoadingScreen() {
+    DrawRectangle(0 - GetScreenWidth() / 2, 0 - GetScreenHeight() / 2, GetScreenWidth(), GetScreenHeight(), BLACK);
+    Font font = LoadFont(DEFAULT_FONT);
+    DrawTextEx(font, "Now Loading...", (Vector2){0 - MeasureTextEx(font, "Now Loading...", SUBTEXT_SIZE, 0.0f).x / 2,
+        0}, SUBTEXT_SIZE, 0.0f, WHITE);
+    EndMode2D();
+    EndDrawing();
 }
 
 void DrawTextureLoopX(Texture2D texture, float width, float height, Vector2 elementPosition, Vector2 cameraPosition, float scale, float zoom) {
@@ -204,6 +214,79 @@ json FindObjectByName(const json& jsonArray, const std::string& name) {
     
     // Return a null JSON object if no match is found
     return nullptr;
+}
+
+Menu* LoadMenu(std::string name, GameInstance* gameInstance) {
+    // Attempt to parse the menu from JSON
+    std::vector<Option> options;
+    std::vector<TextElement> textElements;
+    std::vector<ImageElement> imageElements;
+
+    try {
+        std::ifstream f("data.json");
+        json data = json::parse(f);
+        json menuData = FindObjectByName(data["menus"], name);
+
+        Shader menuShader = LoadShader(0, (std::string("resources/shaders/") + std::string(GLSL_VERSION) + menuData["shader"].get<std::string>()).c_str());
+        Vector2 optionImagePosition = (Vector2){menuData["optionImagePositionX"].get<float>(), menuData["optionImagePositionY"].get<float>()};
+        Vector2 optionSubtextPosition = (Vector2){menuData["optionSubtextPositionX"].get<float>(), menuData["optionSubtextPositionY"].get<float>()};
+
+        // Load Options
+        for (int i = 0; i < menuData["options"].size(); i++) {
+            Vector2 optionPosition = (Vector2){menuData["options"][i]["positionX"].get<float>(), menuData["options"][i]["positionY"].get<float>()};
+            float optionScale = menuData["options"][i]["scale"].get<float>();
+
+            std::string optionName = menuData["options"][i]["text"].get<std::string>();
+            std::string optionSubtext = menuData["options"][i]["subtext"].get<std::string>();
+            std::string optionScreenToLoad = menuData["options"][i]["screenToLoad"].get<std::string>();
+
+            bool isLevel = menuData["options"][i]["isLevel"].get<bool>();
+            float imageScale = menuData["options"][i]["imageScale"].get<float>();
+            Texture2D optionImage = LoadTexture((std::string("resources/sprites/materials/") + menuData["options"][i]["image"].get<std::string>()).c_str());
+
+            bool optionCentered = menuData["options"][i]["centered"].get<bool>();
+            Color optionColor = (Color){(unsigned char)menuData["options"][i]["color"]["r"].get<float>(), (unsigned char)menuData["options"][i]["color"]["g"].get<float>(),
+                (unsigned char)menuData["options"][i]["color"]["b"].get<float>(), (unsigned char)menuData["options"][i]["color"]["a"].get<float>()};
+
+            options.push_back(Option(optionPosition, optionScale, optionName, optionSubtext, optionImage, imageScale, optionScreenToLoad, isLevel, optionCentered, optionColor));
+        }
+
+        // Load Text Elements
+        for (int i = 0; i < menuData["textElements"].size(); i++) {
+            std::string textElementText = menuData["textElements"][i]["text"].get<std::string>();
+            Vector2 textPosition = (Vector2){menuData["textElements"][i]["positionX"].get<float>(), menuData["textElements"][i]["positionY"].get<float>()};
+            float textScale = menuData["textElements"][i]["scale"].get<float>();
+            Color textColor = (Color){(unsigned char)menuData["textElements"][i]["color"]["r"].get<float>(), (unsigned char)menuData["textElements"][i]["color"]["g"].get<float>(),
+                (unsigned char)menuData["textElements"][i]["color"]["b"].get<float>(), (unsigned char)menuData["textElements"][i]["color"]["a"].get<float>()};
+            bool textCentered = menuData["textElements"][i]["centered"].get<bool>();
+
+            textElements.push_back(TextElement(textElementText, textPosition, textScale, textColor, textCentered));
+        }
+
+        // Load Image Elements
+        for (int i = 0; i < menuData["imageElements"].size(); i++) {
+            Texture2D imageElementTexture = LoadTexture((std::string("resources/sprites/menu/") + menuData["imageElements"][i]["texture"].get<std::string>()).c_str());
+            Vector2 imagePosition = (Vector2){menuData["imageElements"][i]["positionX"].get<float>(), menuData["imageElements"][i]["positionY"].get<float>()};
+            float imageScale = menuData["imageElements"][i]["scale"].get<float>();
+            bool imageCentered = menuData["imageElements"][i]["centered"].get<bool>();
+
+            imageElements.push_back(ImageElement(imageElementTexture, imagePosition, imageScale, imageCentered));
+        }
+
+        Menu* menu = new Menu(gameInstance, options, textElements, imageElements, optionSubtextPosition, optionImagePosition);
+        menu->EnterMenu();
+
+        return menu;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error (Loading Default Menu): " << e.what() << std::endl;
+        
+        Shader blankShader = LoadShader(0, (std::string("resources/shaders/") + std::string(GLSL_VERSION) + std::string("/identity.fs")).c_str());
+        Menu* menu = new Menu(gameInstance, options, textElements, imageElements, (Vector2){0, 0}, (Vector2){0, 0});
+        menu->EnterMenu();
+
+        return menu;
+    }
 }
 
 Emitter LoadParticleEmitter(std::string name) {
@@ -491,7 +574,7 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
     return defaultCharacter;
 }
 
-Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds) {
+Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::string> characterLoadIds) {
         
     b2WorldDef worldDef = b2DefaultWorldDef(); // Get default world definition
     worldDef.gravity = {0.0f, GRAVITY};    // Set the gravity in the definition (b2Vec2 can be initialized directly)
@@ -627,7 +710,7 @@ Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds) {
 
         std::cout << "Level: Loaded Shader" << std::endl;
 
-        Level *level = new Level(worldId, postProcessingShader, characters, destructibleBodies, debrisInstances, backgroundElements, foregroundElements);
+        Level *level = new Level(gameInstance,worldId, postProcessingShader, characters, destructibleBodies, debrisInstances, backgroundElements, foregroundElements);
         return level;
     } catch (json::exception& e) {
         std::cerr << "JSON parsing error (loading default level): " << e.what() << std::endl;
@@ -647,7 +730,7 @@ Level* LoadLevel(std::string name, std::vector<std::string> characterLoadIds) {
     BodyMaterial defaultMaterial = BodyMaterial(LoadTexture("resources/sprites/materials/dirt.png"), LoadTexture("resources/sprites/materials/dirt.png"), 1, 1, 1.0f, 1.0f, 1.0f, blankEmitter);
     destructibleBodies.push_back(new DestructibleBody(worldId, defaultMaterial, (Vector2){250.0f, 400.0f}, 0.0f, false, 5000.0f, 500.0f, 100.0f));
 
-    Level *defaultLevel = new Level(worldId, identityShader, characters, destructibleBodies, debrisInstances, backgroundElements, foregroundElements);
+    Level *defaultLevel = new Level(gameInstance, worldId, identityShader, characters, destructibleBodies, debrisInstances, backgroundElements, foregroundElements);
     return defaultLevel;
 }
 
@@ -662,56 +745,69 @@ int GetFrameIndex(AnimationStates animationState, std::unordered_map<AnimationSt
 }
 
 // MENU
-Menu::Menu(std::string title, bool isPauseMenu, float buttonSpacing, Vector2 titlePosition, Vector2 buttonPosition, Vector2 subtextPosition, Vector2 imagePosition) :
-    title(title), isPauseMenu(isPauseMenu), buttonSpacing(buttonSpacing), titlePosition(titlePosition), buttonPosition(buttonPosition), subtextPosition(subtextPosition), imagePosition(imagePosition), drawImages(true), loaded(false) {}
-
-Menu::Menu(std::string title, bool isPauseMenu, float buttonSpacing, Vector2 titlePosition, Vector2 buttonPosition, Vector2 subtextPosition) :
-    title(title), isPauseMenu(isPauseMenu), buttonSpacing(buttonSpacing), titlePosition(titlePosition), buttonPosition(buttonPosition), subtextPosition(subtextPosition), imagePosition(imagePosition), drawImages(false), loaded(false) {}
-
-void Menu::AddOption(Option option) {
-    options.push_back(option);
-    optionPositions.push_back((Vector2){buttonPosition.x, buttonPosition.y + optionPositions.size() * buttonSpacing});
-}
-
-void Menu::LoadMenu() {
+void Menu::EnterMenu() {
+    SetTextureFilter(font.texture, TEXTURE_FILTER_BILINEAR);
     loaded = true;
+
+    camera.target = { 0, 0 };
+    camera.offset = { (float)SCREEN_WIDTH / 2, (float)SCREEN_HEIGHT / 2 };
+    camera.rotation = 0.0f;
+    camera.zoom = 1.0f;
 }
 
-void Menu::UnloadMenu() {
+void Menu::ExitMenu() {
     loaded = false;
+    //free(gameInstance);
 }
 
 void Menu::Update() {
     if (loaded) {
-        if (isPauseMenu) {
-            ClearBackground(PAUSE_BG_COLOR);
+        BeginDrawing();
+        BeginMode2D(camera);
+        ClearBackground(MENU_BG_COLOR);
 
-            if (IsKeyPressed(KEY_ESCAPE)) {
-                UnloadMenu();
+        // Image elements
+        for (int i = 0; i < imageElements.size(); i++) {
+            if (imageElements[i].centered) {
+                DrawTexture(imageElements[i].texture, imageElements[i].position.x - imageElements[i].texture.width / 2,
+                     imageElements[i].position.y - imageElements[i].texture.height / 2, WHITE);
+            } else {
+                DrawTexture(imageElements[i].texture, imageElements[i].position.x, imageElements[i].position.y, WHITE);
             }
-        } else {
-            ClearBackground(MENU_BG_COLOR);
+        }
+
+        // Text elements
+        for (int i = 0; i < textElements.size(); i++) {
+            if (textElements[i].centered) {
+                DrawTextEx(font, textElements[i].text.c_str(), (Vector2){textElements[i].position.x - MeasureTextEx(font, textElements[i].text.c_str(),
+                    textElements[i].scale, 0.0f).x / 2, textElements[i].position.y}, textElements[i].scale, 0.0f, textElements[i].color);
+            } else {
+                DrawTextEx(font, textElements[i].text.c_str(), textElements[i].position, textElements[i].scale, 0.0f, textElements[i].color);
+            }
         }
         
-        DrawText(title.c_str(), titlePosition.x, titlePosition.y, TITLE_SIZE, TITLE_COLOR);
-        
+        // Options
         for (int i = 0; i < options.size(); i++) {
-            if (options[i].hovered) {
-                DrawText(options[i].text.c_str(), optionPositions[i].x, optionPositions[i].y, TEXT_SIZE, HOVER_COLOR);
-            } else {
-                DrawText(options[i].text.c_str(), optionPositions[i].x, optionPositions[i].y, TEXT_SIZE, TEXT_COLOR);
+            Vector2 centerDisplacement = (Vector2){0, 0};
+            if (options[i].centered) {
+                centerDisplacement = (Vector2){MeasureTextEx(font, options[i].text.c_str(), options[i].scale, 0.0f).x / 2, 0};
             }
 
-            if (drawImages && options[i].hovered) {
-                DrawTexture(options[i].image, imagePosition.x, imagePosition.y, WHITE);
+            if (options[i].hovered) {
+                DrawTextEx(font, options[i].text.c_str(), options[i].position - centerDisplacement, options[i].scale, 0.0f, (Color){options[i].color.r, options[i].color.g,
+                     options[i].color.b, (unsigned char) (options[i].color.a * HOVER_ALPHA_SHIFT)});
+                DrawTexture(options[i].image, optionImagePosition.x, optionImagePosition.y, WHITE);
+            } else {
+                DrawTextEx(font, options[i].text.c_str(), options[i].position - centerDisplacement, options[i].scale, 0.0f, options[i].color);
             }
 
             if (options[i].subtext != "" && options[i].hovered) {
-                DrawText(options[i].subtext.c_str(), subtextPosition.x, subtextPosition.y, SUBTEXT_SIZE, SUBTEXT_COLOR);
+                DrawText(options[i].subtext.c_str(), optionSubtextPosition.x, optionSubtextPosition.y, SUBTEXT_SIZE, SUBTEXT_COLOR);
             }
-        
+
             // Determine if hovered
-            if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){optionPositions[i].x, optionPositions[i].y, (float) (options[i].text.length() * TEXT_SIZE, TEXT_SIZE)})) {
+            if (CheckCollisionPointRec(GetScreenToWorld2D(GetMousePosition(), camera), (Rectangle){options[i].position.x - centerDisplacement.x,
+                 options[i].position.y, MeasureTextEx(font, options[i].text.c_str(), options[i].scale, 0.0f).x, options[i].scale})) {
                 options[i].hovered = true;
             } else {
                 options[i].hovered = false;
@@ -719,10 +815,24 @@ void Menu::Update() {
 
             // Handle clicks
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && options[i].hovered) {
-                UnloadMenu();
+                std::vector<std::string> characterPointers;
+                characterPointers.push_back("water");
+                characterPointers.push_back("water");
+                
+                DrawLoadingScreen();
+
+                if (options[i].isLevel) {
+                    gameInstance->SetLevel(options[i].screenToLoad, characterPointers);
+                } else {
+                    gameInstance->SetMenu(options[i].screenToLoad);
+                }
+
+                ExitMenu();
             }
         }
 
+        EndMode2D();
+        EndDrawing();
     }
 }
 
@@ -1260,26 +1370,33 @@ void Level::Update() {
     // Arguments: text, posX, posY, fontSize, color
     DrawText(fpsText.c_str(), 10, 10, 20, DARKGRAY); // Top-left corner, font size 20, dark gray color
 
+    // Pause Input
+    if (CheckInput(InputTypes::PAUSE, CharacterTypes::PLAYER_1)) paused = !paused;
+
     if (loaded) {
-        b2World_Step(world, GetFrameTime(), SUB_STEPS);
+        
+        if (!paused) b2World_Step(world, GetFrameTime(), SUB_STEPS);
 
         for (int i = 0; i < destructibleBodies.size(); i++) {
-            destructibleBodies[i]->Update();
+            if (!paused) destructibleBodies[i]->Update();
             destructibleBodies[i]->Draw();
         }
 
         for (int i = 0; i < freeDebrisInstances.size(); i++) {
-            freeDebrisInstances[i]->Update();
+            if (!paused) freeDebrisInstances[i]->Update();
             freeDebrisInstances[i]->Draw();
         }
         
         for (int i = 0; i < characters.size(); i++) {
             if (characters[i]->health > 0) { 
-                characters[i]->Update();
+                if (!paused) characters[i]->Update();
                 characters[i]->Draw();
             }
         }
     }
+
+    bool player1Alive = characters[0]->health > 0;
+    bool player2Alive = characters[1]->health > 0;
 
     // Determine screen shake
     Vector2 screenShake = {0.0f, 0.0f};
@@ -1289,7 +1406,8 @@ void Level::Update() {
         screenShake = {RandomFloatRange(-CAM_SHAKE_SMALL, CAM_SHAKE_SMALL), RandomFloatRange(-CAM_SHAKE_SMALL, CAM_SHAKE_SMALL)};
     }
 
-    if (characters[0]->IsUsingSkill() || characters[1]->IsUsingSkill() || characters[0]->IsStunned() || characters[1]->IsStunned()) {
+    if (characters[0]->IsUsingSkill() || characters[1]->IsUsingSkill() || (characters[0]->IsStunned() && player1Alive)
+     || (characters[1]->IsStunned() && player2Alive)) {
         // Random screen shake vector
         screenShake = {RandomFloatRange(-CAM_SHAKE_LARGE, CAM_SHAKE_LARGE), RandomFloatRange(-CAM_SHAKE_LARGE, CAM_SHAKE_LARGE)};
     }
@@ -1307,11 +1425,22 @@ void Level::Update() {
         camera.zoom = camera.zoom + (std::min(CAM_MAX_ZOOM, CAM_ZOOM_RATE/distance) - camera.zoom) * CAM_ZOOM_INTERPOLATION;
     }
 
+    EndMode2D();
+    EndTextureMode();
+    
+    BeginDrawing();
+
+    ClearBackground(BLACK);
+    BeginShaderMode(postProcessingShader);
+    DrawTextureRec(renderTexture.texture, (Rectangle){ 0, 0, (float)renderTexture.texture.width, (float)-renderTexture.texture.height }, (Vector2){ 0, 0 }, WHITE);
+    
+    EndShaderMode();
+
     // HUD
     // Define bar dimensions and padding
-    float barWidth = 200.0f;
-    float barHeight = 20.0f;
-    float padding = 10.0f;
+    float barWidth = 300.0f;
+    float barHeight = 30.0f;
+    float padding = 20.0f;
 
     // Iterate over all characters in the level
     for (const auto& character : characters) {
@@ -1326,12 +1455,12 @@ void Level::Update() {
                     mediumPosition = { padding, padding + barHeight + padding };
                     break;
                 case CharacterTypes::PLAYER_2:
-                    healthPosition = { SCREEN_WIDTH / 2 - barWidth - padding, padding };
-                    mediumPosition = { SCREEN_WIDTH / 2 - barWidth - padding, padding + barHeight + padding };
+                    healthPosition = { SCREEN_WIDTH - barWidth - padding, padding };
+                    mediumPosition = { SCREEN_WIDTH - barWidth - padding, padding + barHeight + padding };
                     break;
                 case CharacterTypes::CPU:
-                    healthPosition = { SCREEN_WIDTH / 2 - barWidth - padding, padding };
-                    mediumPosition = { SCREEN_WIDTH / 2 - barWidth - padding, padding + barHeight + padding };
+                    healthPosition = { SCREEN_WIDTH - barWidth - padding, padding };
+                    mediumPosition = { SCREEN_WIDTH - barWidth - padding, padding + barHeight + padding };
                 default:
                     // Default to top-left if type is unknown
                     healthPosition = { padding, padding };
@@ -1344,40 +1473,94 @@ void Level::Update() {
             int medium = character->medium;
             int mxMedium = character->GetMaxMedium();
 
-            healthPosition.x += cameraPosition.x - SCREEN_WIDTH / 4;
-            healthPosition.y += cameraPosition.y - SCREEN_HEIGHT / 4;
-            mediumPosition.x += cameraPosition.x - SCREEN_WIDTH / 4;
-            mediumPosition.y += cameraPosition.y - SCREEN_HEIGHT / 4;
-
             // Draw background for health bar
             DrawRectangle(healthPosition.x, healthPosition.y, barWidth, barHeight, DARKGRAY);
             // Draw health bar (proportional to current health)
             float healthBarFill = (float)health / mxHealth * barWidth;
-            DrawRectangle(healthPosition.x, healthPosition.y, healthBarFill, barHeight, GREEN);
+            DrawRectangle(healthPosition.x, healthPosition.y, healthBarFill, barHeight, HEALTH_COLOR);
             
             // Draw health text
-            DrawText(TextFormat("HP: %d/%d", health, mxHealth), healthPosition.x, healthPosition.y, 16, WHITE);
+            DrawTextEx(font, TextFormat("HP: %d/%d", health, mxHealth), healthPosition, SUBTEXT_SIZE, 0.0f, WHITE);
 
             // Draw background for medium bar
             DrawRectangle(mediumPosition.x, mediumPosition.y, barWidth, barHeight, DARKGRAY);
             // Draw medium bar (proportional to current medium)
             float mediumBarFill = (float)medium / mxMedium * barWidth;
-            DrawRectangle(mediumPosition.x, mediumPosition.y, mediumBarFill, barHeight, BLUE);
+            DrawRectangle(mediumPosition.x, mediumPosition.y, mediumBarFill, barHeight, MEDIUM_COLOR);
             
             // Draw medium text
-            DrawText(TextFormat("Medium: %d/%d", medium, mxMedium), mediumPosition.x, mediumPosition.y, 16, WHITE);
+            DrawTextEx(font, TextFormat("MEDIUM: %d/%d", medium, mxMedium), mediumPosition, SUBTEXT_SIZE, 0.0f, WHITE);
+        }
+    }
+    
+    if (paused && player1Alive && player2Alive) {
+        //Pause menu
+        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, PAUSE_BG_COLOR);
+
+        DrawTextEx(font, "PAUSED", (Vector2){SCREEN_WIDTH / 2 - MeasureTextEx(font, "PAUSED",
+                    PAUSE_TITLE_SIZE, 0.0f).x / 2, (SCREEN_HEIGHT / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+
+        // Resume button
+        Vector2 resumeButtonPosition = (Vector2) {SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + PAUSE_OPTION_SPACING} - MeasureTextEx(font, "Resume", SUBTEXT_SIZE, 0.0f) / 2;
+        if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){resumeButtonPosition.x, resumeButtonPosition.y,
+            MeasureTextEx(font, "Resume", SUBTEXT_SIZE, 0.0f).x, SUBTEXT_SIZE})) {
+                DrawTextEx(font, "Resume", resumeButtonPosition, SUBTEXT_SIZE, 0.0f, HOVER_COLOR);
+                
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                    paused = false;
+                }
+
+        } else {
+            DrawTextEx(font, "Resume", resumeButtonPosition, SUBTEXT_SIZE, 0.0f, WHITE);
+        }
+
+        // Menu button
+        Vector2 menuButtonPosition = (Vector2) {SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + PAUSE_OPTION_SPACING * 2} - MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f) / 2;
+        if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){menuButtonPosition.x, menuButtonPosition.y, 
+            MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f).x, SUBTEXT_SIZE})) {
+                
+            DrawTextEx(font, "Menu", menuButtonPosition, SUBTEXT_SIZE, 0.0f, HOVER_COLOR);
+            
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                DrawLoadingScreen();
+                gameInstance->SetMenu(gameInstance->startingMenu);
+            }
+
+        } else {
+            DrawTextEx(font, "Menu", menuButtonPosition, SUBTEXT_SIZE, 0.0f, WHITE);
         }
     }
 
-    EndMode2D();
-    EndTextureMode();
-    
-    BeginDrawing();
+    if (!player1Alive || !player2Alive) {
+        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, PAUSE_BG_COLOR);
 
-    ClearBackground(BLACK);
-    BeginShaderMode(postProcessingShader);
-    DrawTextureRec(renderTexture.texture, (Rectangle){ 0, 0, (float)renderTexture.texture.width, (float)-renderTexture.texture.height }, (Vector2){ 0, 0 }, WHITE);
-    EndShaderMode();
+        if (player1Alive) {
+            DrawTextEx(font, "PLAYER 1 VICTORY", (Vector2){SCREEN_WIDTH / 2 - MeasureTextEx(font, "PLAYER 1 VICTORY",
+                    PAUSE_TITLE_SIZE, 0.0f).x / 2, (SCREEN_HEIGHT / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+        } else if (player2Alive) {
+            DrawTextEx(font, "PLAYER 2 VICTORY", (Vector2){SCREEN_WIDTH / 2 - MeasureTextEx(font, "PLAYER 2 VICTORY",
+                    PAUSE_TITLE_SIZE, 0.0f).x / 2, (SCREEN_HEIGHT / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+        } else {
+            DrawTextEx(font, "Draw!", (Vector2){SCREEN_WIDTH / 2 - MeasureTextEx(font, "Draw!",
+                    PAUSE_TITLE_SIZE, 0.0f).x / 2, (SCREEN_HEIGHT / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+        }
+
+        // Menu button
+        Vector2 menuButtonPosition = (Vector2) {SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + PAUSE_OPTION_SPACING * 2} - MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f) / 2;
+        if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){menuButtonPosition.x, menuButtonPosition.y, 
+            MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f).x, SUBTEXT_SIZE})) {
+                
+            DrawTextEx(font, "Menu", menuButtonPosition, SUBTEXT_SIZE, 0.0f, HOVER_COLOR);
+            
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                DrawLoadingScreen();
+                gameInstance->SetMenu(gameInstance->startingMenu);
+            }
+        } else {
+            DrawTextEx(font, "Menu", menuButtonPosition, SUBTEXT_SIZE, 0.0f, WHITE);
+        }
+
+    }
 
     EndDrawing();
 }
@@ -2024,4 +2207,38 @@ void Emitter::Draw() {
         }
     }
     EndShaderMode();
+}
+
+// GAME INSTANCE
+GameInstance::GameInstance(std::string startingMenu) : startingMenu(startingMenu) {
+    // Initialization
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetConfigFlags(FLAG_VSYNC_HINT);
+
+    SetTraceLogLevel(LOG_WARNING);
+
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MEDIUM");
+    ToggleFullscreen();
+
+    SetMenu(startingMenu);
+    currentLevel = nullptr;
+}
+
+void GameInstance::Update() {
+    
+    SetExitKey(KEY_F4);
+
+    if (currentMenu != nullptr && currentMenu->IsLoaded()) {
+        currentMenu->Update();
+    } else if (currentLevel != nullptr) {
+        currentLevel->Update();
+    }
+}
+
+void GameInstance::SetMenu(std::string name) {
+    currentMenu = LoadMenu(name, this);
+}
+
+void GameInstance::SetLevel(std::string name, std::vector<std::string> characterLoadIds) {
+    currentLevel = LoadLevel(name, this, characterLoadIds);
 }
