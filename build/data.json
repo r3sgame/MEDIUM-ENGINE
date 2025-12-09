@@ -380,7 +380,19 @@
             ]
         }
     ],
+    
+    "music" : [
+        {
 
+        }
+    ],
+
+    "audio" : [
+        {
+            
+        }
+    ],
+    
     "levels": [
         {
             "name": "village",
