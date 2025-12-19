@@ -1,6 +1,7 @@
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 
+#include "box2d/id.h"
 #include "raylib.h"
 #include "rlgl.h"
 #include "raymath.h"
@@ -45,7 +46,7 @@ using json = nlohmann::json;
 #define JITTER_TOLERANCE 0.2f
 #define VELOCITY_TOLERANCE 1.0f
 #define COYOTE_TIME 0.15f
-#define CHARACTER_FRICTION 1.0f
+#define CHARACTER_FRICTION 0.5f
 
 #define DEFAULT_FRICTION 0.5f
 #define DEFAULT_RESTITUTION 0.0f
@@ -404,6 +405,7 @@ public:
 private:
     b2WorldId world;
     b2BodyId body;
+    b2ShapeId shape;
 
     Vector2 size;
     Vector2 hurtBox;

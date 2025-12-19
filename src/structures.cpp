@@ -817,7 +817,7 @@ void Menu::Update() {
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && options[i].hovered) {
                 std::vector<std::string> characterPointers;
                 characterPointers.push_back("water");
-                characterPointers.push_back("water");
+                characterPointers.push_back("air");
                 
                 DrawLoadingScreen();
 
@@ -868,6 +868,11 @@ Character::Character(b2WorldId worldId, Vector2 initialPosition, Vector2 bodySiz
 
     b2CreatePolygonShape(body, &playerShapeDef, &playerBox);
 
+    b2ShapeId shapeArray[] = {0};
+    b2Body_GetShapes(body, shapeArray, 1);
+
+    shape = shapeArray[0];
+
     // Initialize raylib rect and position for drawing.
     rect = (Rectangle){ 0, 0, size.x, size.y };
     position = (Vector2){0, 0};
@@ -887,6 +892,11 @@ Character::Character(b2WorldId worldId, Vector2 initialPosition, Vector2 bodySiz
     for (int i = 0; i < (int) CharacterStates::Size; i++) {
         states[(CharacterStates)i] = false;
     }
+    
+    // Set face direction
+    if (characterType == CharacterTypes::PLAYER_2 || characterType == CharacterTypes::CPU) {
+        isFacingRight = false;
+    }
 }
 
 // Destructor to clean up Box2D body
@@ -904,6 +914,12 @@ Character::~Character() {
 // Update Character's position and rect from Box2D body
 void Character::Update() {
     b2Body_SetAngularVelocity(body, 0.0f);
+
+    if (IsGrounded()) {
+        b2Shape_SetFriction(shape, CHARACTER_FRICTION);
+    } else {
+        b2Shape_SetFriction(shape, 0.0f);
+    }
 
     // Get the position from the Box2D body (in meters) using b2Body_GetPosition
     b2Vec2 bodyPos = b2Body_GetPosition(body);

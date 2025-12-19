@@ -19,6 +19,35 @@
                 "medium": "water_medium.fs",
                 "hurt": "water_hurt.fs",
                 "attack": "water_attack.fs"
+            },
+            "sounds": {
+                "hurt": "water_hurt.mp3",
+                "attack": "water_attack.mp3"
+            }
+        },
+        {
+            "name": "air",
+            "spriteSettings": "air",
+            "meleeWeapon": "staff",
+            "gun": "smg",
+            "skills": ["tornado", "pressure"],
+            "health": 100.0,
+            "medium": 100.0,
+            "mediumChargeRate": 8.0,
+            "moveSpeed": 1000.0,
+            "jumpForce": 2200.0,
+            "width": 60.0,
+            "height": 120.0,
+            "hurtBoxWidth": 30.0,
+            "hurtBoxHeight": 60.0,
+            "shaders": {
+                "medium": "water_medium.fs",
+                "hurt": "water_hurt.fs",
+                "attack": "water_attack.fs"
+            },
+            "sounds": {
+                "hurt": "water_hurt.mp3",
+                "attack": "water_attack.mp3"
             }
         }
     ],
@@ -37,6 +66,20 @@
             "recoveryTime": 0.05,
             "slowdownFactor": 2.0,
             "stunTime": 1.0
+        },
+        {
+            "name": "staff",
+            "hitBoxWidth": 100.0,
+            "hitBoxHeight": 70.0,
+            "damage": 2,
+            "mediumAffinity": 2,
+            "energy": 300.0,
+            "knockback": 50.0,
+            "windupTime": 0.02,
+            "activeTime": 0.05,
+            "recoveryTime": 0.02,
+            "slowdownFactor": 1.5,
+            "stunTime": 0.5
         }
     ],
 
@@ -59,19 +102,19 @@
         },
         {
             "name": "smg",
-            "fireTime": 10.0,
-            "ammo": 10,
-            "damage": 10,
+            "fireTime": 0.1,
+            "ammo": 20,
+            "damage": 1,
             "mediumAffinity": 5,
-            "reloadTime": 10.0,
-            "range": 10.0,
+            "reloadTime": 5.0,
+            "range": 1250.0,
             "energy": 10.0,
-            "knockback": 100.0,
+            "knockback": 80.0,
             "slowdownFactor": 10.0,
-            "stunTime": 0.5,
+            "stunTime": 0.05,
             "muzzleFlash": "muzzle_flash",
-            "muzzleFlashPositionX": 0.0,
-            "muzzleFlashPositionY": 0.0
+            "muzzleFlashPositionX": 70.0,
+            "muzzleFlashPositionY": -20.0
         },
         {
             "name": "shotgun",
@@ -141,6 +184,56 @@
             "recoveryTime": 0.05,
             "slowdownFactor": 2.0,
             "stunTime": 0.75
+        },
+        {
+            "name": "tornado",
+            "particle": "tornado",
+            "input": 0,
+            "animationState": 1,
+            "forceX": 0.0,
+            "forceY": 1500.0,
+            "upHitBoxWidth": 120.0,
+            "upHitBoxHeight": 30.0,
+            "downHitBoxWidth": 120.0,
+            "downHitBoxHeight": 30.0,
+            "forwardHitBoxWidth": 30.0,
+            "forwardHitBoxHeight": 120.0,
+            "backwardHitBoxWidth": 30.0,
+            "backwardHitBoxHeight": 120.0,
+            "damage": 10,
+            "energy": 1000.0,
+            "knockback": 200.0,
+            "mediumCost": 10.0,
+            "windupTime": 0.0,
+            "activeTime": 0.50,
+            "recoveryTime": 0.0,
+            "slowdownFactor": 10.0,
+            "stunTime": 0.5
+        },
+        {
+            "name": "pressure",
+            "particle": "pressure",
+            "input": 3,
+            "animationState": 6,
+            "forceX": 0.0,
+            "forceY": 0.0,
+            "upHitBoxWidth": 0.0,
+            "upHitBoxHeight": 0.0,
+            "downHitBoxWidth": 0.0,
+            "downHitBoxHeight": 0.0,
+            "forwardHitBoxWidth": 240.0,
+            "forwardHitBoxHeight": 120.0,
+            "backwardHitBoxWidth": 0.0,
+            "backwardHitBoxHeight": 0.0,
+            "damage": 25,
+            "energy": 1000.0,
+            "knockback": 200.0,
+            "mediumCost": 30.0,
+            "windupTime": 0.05,
+            "activeTime": 0.1,
+            "recoveryTime": 0.05,
+            "slowdownFactor": 2.0,
+            "stunTime": 0.75
         }
     ],
 
@@ -156,6 +249,35 @@
                 "idle": 1,
                 "jump": 1,
                 "run": 4,
+                "windup": 1,
+                "active": 1,
+                "recovery": 1,
+                "gun": 1,
+                "stun": 1,
+                "charge": 1
+            },
+            "shaders": {
+                "idle": "water_idle.fs",
+                "jump": "water_jump.fs",
+                "run": "water_run.fs",
+                "windup": "water_windup.fs",
+                "active": "water_active.fs",
+                "recovery": "water_recovery.fs",
+                "gun": "water_gun.fs",
+                "stun": "water_stun.fs",
+                "charge": "water_charge.fs"
+            }
+        },
+        {
+            "name": "air",
+            "spriteScale": 1.25,
+            "framesPerSecond": 12.0,
+            "spriteOffsetX": -120.0,
+            "spriteOffsetY": -20.0,
+            "frameCounts": {
+                "idle": 1,
+                "jump": 1,
+                "run": 2,
                 "windup": 1,
                 "active": 1,
                 "recovery": 1,
@@ -229,6 +351,60 @@
                 "r": 94.0,
                 "g": 176.0,
                 "b": 200.0,
+                "a": 50.0
+            }
+        },
+        {
+        "name": "tornado",
+            "shader": "",
+            "velocityXMin": -100.0,
+            "velocityXMax": 100.0,
+            "velocityYMin": -2000.0,
+            "velocityYMax": 0.0,
+            "accelerationX": 0.0,
+            "accelerationY": 4000.0,
+            "scaleMin": 10.0,
+            "scaleMax": 20.0,
+            "lifetimeMin": 1.0,
+            "lifetimeMax": 2.0,
+            "numParticles": 100,
+            "colorBound1": {
+                "r": 255.0,
+                "g": 255.0,
+                "b": 255.0,
+                "a": 200.0
+            },
+            "colorBound2": {
+                "r": 255.0,
+                "g": 255.0,
+                "b": 255.0,
+                "a": 50.0
+            }
+        },
+        {
+            "name": "pressure",
+            "shader": "",
+            "velocityXMin": 0.0,
+            "velocityXMax": 4000.0,
+            "velocityYMin": -10.0,
+            "velocityYMax": 10.0,
+            "accelerationX": 0.0,
+            "accelerationY": 0.0,
+            "scaleMin": 10.0,
+            "scaleMax": 20.0,
+            "lifetimeMin": 1.0,
+            "lifetimeMax": 2.0,
+            "numParticles": 100,
+            "colorBound1": {
+                "r": 255.0,
+                "g": 255.0,
+                "b": 255.0,
+                "a": 200.0
+            },
+            "colorBound2": {
+                "r": 255.0,
+                "g": 255.0,
+                "b": 255.0,
                 "a": 50.0
             }
         },
