@@ -383,16 +383,16 @@
     
     "music" : [
         {
-
+            
         }
     ],
 
-    "audio" : [
+    "sfx" : [
         {
             
         }
     ],
-    
+
     "levels": [
         {
             "name": "village",
