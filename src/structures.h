@@ -20,6 +20,8 @@
 // for convenience
 using json = nlohmann::json;
 
+#define GAME_NAME "LYSIS:STRIFE"
+
 // Define a conversion factor from pixels to Box2D units (meters)
 #define PIXELS_PER_METER 120.0f
 #define METERS_PER_PIXEL (1.0f / PIXELS_PER_METER)
@@ -34,13 +36,17 @@ using json = nlohmann::json;
 #define SCREEN_WIDTH 1920
 #define SCREEN_HEIGHT 1080
 
-#define CAM_X_INTERPOLATION 0.2f
+#define CAM_X_INTERPOLATION 0.1f
 #define CAM_Y_INTERPOLATION 0.2f
-#define CAM_MAX_ZOOM 1.6f
+#define CAM_ZOOM_X_FACTOR 1.0f
+#define CAM_ZOOM_Y_FACTOR 3.0f
+#define CAM_MAX_ZOOM 1.4f
 #define CAM_ZOOM_RATE 1500.0f
 #define CAM_ZOOM_INTERPOLATION 0.2f
 #define CAM_SHAKE_SMALL 2.0f
 #define CAM_SHAKE_LARGE 5.0f
+#define CAM_ZOOM_MATCH_END 2.0f
+#define CAM_ZOOM_INTERPOLATION_MATCH_END 0.05f
 
 #define COLLISION_MARGIN 0.001f
 #define JITTER_TOLERANCE 0.2f
@@ -52,13 +58,14 @@ using json = nlohmann::json;
 #define DEFAULT_RESTITUTION 0.0f
 
 #define MENU_BG_COLOR Color{ 0, 0, 0, 255 }
-#define PAUSE_BG_COLOR Color{ 0, 0, 0, 128 }
+#define PAUSE_BG_COLOR Color{ 0, 0, 0, 200 }
 #define TITLE_COLOR Color{ 255, 255, 255, 255 }
 #define TEXT_COLOR Color{ 255, 255, 255, 255 }
 #define SUBTEXT_COLOR Color{ 128, 128, 128, 255 }
 #define HOVER_COLOR Color{ 255, 0, 0, 255 }
 #define HEALTH_COLOR Color{ 0, 255, 0, 122 }
 #define MEDIUM_COLOR Color{ 0, 0, 255, 122 }
+#define AMMO_COLOR Color{ 255, 0, 0, 122 }
 
 #define HOVER_ALPHA_SHIFT 0.5f
 #define SUBTEXT_SIZE 32
@@ -66,6 +73,9 @@ using json = nlohmann::json;
 #define PAUSE_OPTION_SPACING 60
 
 #define DEFAULT_FONT "resources/fonts/ScienceGothic-Light.ttf"
+#define SHADER_FOLDER "resources/shaders/"
+#define SPRITE_FOLDER "resources/sprites/"
+#define AUDIO_FOLDER "resources/audio/"
 
 #define DEBUG 1
 
@@ -77,6 +87,10 @@ using json = nlohmann::json;
 #define GL_LINEAR 0x2601
 
 #define GLSL_VERSION "330"
+
+#define LEVEL_WAIT_TIME 3.0f
+
+#define MUSIC_PAUSE_VOLUME 0.25f
 
 // Forward declarations
 class Debris;
@@ -113,31 +127,48 @@ public:
 
 struct Option {
 public:
-    Option(Vector2 position, float scale, std::string text, std::string subtext, Texture2D image, float imageScale, std::string screenToLoad, bool isLevel, bool centered, Color color)
-     : position(position), scale(scale), text(text), subtext(subtext), image(image), isLevel(isLevel), screenToLoad(screenToLoad), centered(centered), color(color) {};
+    Option(Vector2 position, Vector2 hoverImagePosition, Vector2 subtextPosition, float scale, float hoverImageScale, std::string text, std::string subtext, 
+        Texture2D image, Texture2D hoverImage, std::string screenToLoad, bool isLevel, bool centered, Color color, Color hoverColor, 
+        std::string instanceIdKey, std::string instanceIdValue)
+     : position(position), hoverImagePosition(hoverImagePosition), subtextPosition(subtextPosition), scale(scale), hoverImageScale(hoverImageScale), text(text), subtext(subtext), image(image), hoverImage(hoverImage), 
+     isLevel(isLevel), screenToLoad(screenToLoad), centered(centered), color(color), hoverColor(hoverColor), instanceIdKey(instanceIdKey), 
+     instanceIdValue(instanceIdValue) {};
 
     Vector2 position;
+    Vector2 hoverImagePosition;
+    Vector2 subtextPosition;
+
     float scale;
+    float hoverImageScale;
 
     bool hovered = false;
     
     std::string text;
     std::string subtext;
+
     Texture2D image;
+    Texture2D hoverImage;
     
     std::string screenToLoad;
     bool isLevel;
 
     bool centered;
     Color color;
+    Color hoverColor;
+
+    std::string instanceIdKey;
+    std::string instanceIdValue;
 };
 
 class Menu {
 public:
     Menu(GameInstance* gameInstance, std::vector<Option> options, std::vector<TextElement> textElements,
-        std::vector<ImageElement> imageElements, Vector2 optionSubtextPosition, Vector2 optionImagePosition) :
+        std::vector<ImageElement> imageElements, Shader menuShader, Shader transitionShader, Texture2D backgroundTexture, Music music) :
         gameInstance(gameInstance), options(options), textElements(textElements), imageElements(imageElements), camera({ 0 }),
-        optionSubtextPosition(optionSubtextPosition), optionImagePosition(optionImagePosition), loaded(false), font(LoadFont(DEFAULT_FONT)) {};
+        loaded(false), font(LoadFont(DEFAULT_FONT)), menuShader(menuShader), 
+        transitionShader(transitionShader), backgroundTexture(backgroundTexture), music(music) {
+            renderTexture = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+        };
 
     void Update();
     void EnterMenu();
@@ -155,11 +186,20 @@ private:
     Vector2 optionSubtextPosition;
     Vector2 optionImagePosition;
 
+    Shader menuShader;
+    Shader transitionShader;
+    RenderTexture2D renderTexture;
+    Texture2D backgroundTexture;
+
     bool loaded;
 
     Camera2D camera;
 
     Font font;
+
+    float time;
+
+    Music music;
 };
 
 enum struct AnimationStates {
@@ -187,23 +227,23 @@ enum struct AnimationStates {
 
 struct SpriteSettings {
 public:
-    SpriteSettings(Vector2 spriteOffset, std::string folderName, float spriteScale, float framesPerSecond, std::unordered_map<AnimationStates, int> frameCounts,
-         std::unordered_map<AnimationStates, Shader> shaders);
+    SpriteSettings(Vector2 spriteOffset, std::string folderName, float spriteScale, std::unordered_map<AnimationStates, int> frameCounts,
+        std::unordered_map<AnimationStates, float> frameRates, std::unordered_map<AnimationStates, Shader> shaders);
     
     std::vector<Texture2D> sprites;
     Vector2 offset;
     float scale;
-    float framesPerSecond;
     int totalFrames;
 
     std::unordered_map<AnimationStates, int> frameCounts;
+    std::unordered_map<AnimationStates, float> frameRates;
     std::unordered_map<AnimationStates, Shader> shaders;
 };
 
 struct MeleeWeapon {
-    MeleeWeapon(Vector2 hitBox, float damage, float mediumAffinity, float energy, float knockback, float windupTime, float activeTime, float recoveryTime, float stunTime, float slowdownFactor) :
+    MeleeWeapon(Vector2 hitBox, float damage, float mediumAffinity, float energy, float knockback, float windupTime, float activeTime, float recoveryTime, float stunTime, float slowdownFactor, Sound sound) :
     hitBox(hitBox), damage(damage), mediumAffinity(mediumAffinity), energy(energy), knockback(knockback), windupTime(windupTime), activeTime(activeTime), stunTime(activeTime), 
-    recoveryTime(recoveryTime), slowdownFactor(slowdownFactor) {}
+    recoveryTime(recoveryTime), slowdownFactor(slowdownFactor), sound(sound) {}
     
     Vector2 hitBox;
 
@@ -218,6 +258,8 @@ struct MeleeWeapon {
     
     float stunTime;
     float slowdownFactor;
+
+    Sound sound;
 };
 
 struct SpriteElement {
@@ -253,10 +295,10 @@ enum struct InputTypes {
 
 class Emitter {
     public:
-    Emitter(Shader shader, Vector2 velocityMin, Vector2 velocityMax, Vector2 acceleration, float scaleMin, float scaleMax, float lifetimeMin,
-         float lifetimeMax, int numParticles, Color colorBound1, Color colorBound2)
-          : shader(shader), velocityMax(velocityMax), velocityMin(velocityMin), acceleration(acceleration), scaleMin(scaleMin), scaleMax(scaleMax),
-           lifetimeMin(lifetimeMin), lifetimeMax(lifetimeMax), numParticles(numParticles), colorBound1(colorBound1), colorBound2(colorBound2) {};
+    Emitter(Shader shader, Texture2D texture, Vector2 velocityMin, Vector2 velocityMax, Vector2 acceleration, float scaleMin, float scaleMax, float lifetimeMin,
+         float lifetimeMax, float rotationMin, float rotationMax, int numParticles, Color colorBound1, Color colorBound2)
+          : shader(shader), texture(texture), velocityMax(velocityMax), velocityMin(velocityMin), acceleration(acceleration), scaleMin(scaleMin), scaleMax(scaleMax),
+           lifetimeMin(lifetimeMin), lifetimeMax(lifetimeMax), rotationMin(rotationMin), rotationMax(rotationMax), numParticles(numParticles), colorBound1(colorBound1), colorBound2(colorBound2) {};
 
     void Start(Vector2 initialPosition, bool flipX, bool flipY);
     void Update();
@@ -264,6 +306,7 @@ class Emitter {
 
     private:
     Shader shader;
+    Texture2D texture;
 
     Vector2 velocityMax;
     Vector2 velocityMin;
@@ -275,8 +318,12 @@ class Emitter {
     float lifetimeMin;
     float lifetimeMax;
 
+    float rotationMin;
+    float rotationMax;
+
     std::vector<Vector2> positions = {};
     std::vector<Vector2> velocities = {};
+    std::vector<float> rotations = {};
     std::vector<float> scales = {};
     std::vector<float> lifetimes = {};
     std::vector<Color> colors = {};
@@ -292,9 +339,9 @@ class Emitter {
 
 struct Skill {
     Skill(Vector2 force, Vector2 upHitBox, Vector2 downHitBox, Vector2 forwardHitBox, Vector2 backwardHitBox, float energy, float damage, float mediumCost, float knockback,
-        float windupTime, float activeTime, float recoveryTime, float stunTime, float slowdownFactor, AnimationStates animationState, InputTypes input, Emitter particles) 
+        float windupTime, float activeTime, float recoveryTime, float stunTime, float slowdownFactor, AnimationStates animationState, InputTypes input, Emitter particles, Sound sound) 
     : force(force), upHitBox(upHitBox), downHitBox(downHitBox), forwardHitBox(forwardHitBox), backwardHitBox(backwardHitBox), energy(energy), damage(damage), mediumCost(mediumCost), knockback(knockback), 
-    windupTime(windupTime), activeTime(activeTime), recoveryTime(recoveryTime), stunTime(stunTime), slowdownFactor(slowdownFactor), animationState(animationState), input(input), particles(particles) {}
+    windupTime(windupTime), activeTime(activeTime), recoveryTime(recoveryTime), stunTime(stunTime), slowdownFactor(slowdownFactor), animationState(animationState), input(input), particles(particles), sound(sound) {}
     
     Vector2 force;
 
@@ -318,13 +365,16 @@ struct Skill {
     AnimationStates animationState;
     InputTypes input;
     Emitter particles;
+
+    Sound sound;
 };
 
 struct Gun {
     Gun(float fireTime, int ammo, float damage, float mediumAffinity, float reloadTime, float range, float energy, float knockback,
-         float stunTime, float slowdownFactor, Emitter muzzleFlash, Vector2 muzzleFlashPosition) :
+         float stunTime, float slowdownFactor, Emitter muzzleFlash, Vector2 muzzleFlashPosition, Sound fireSound, Sound reloadSound) :
     fireTime(fireTime), maxAmmo(ammo), damage(damage), mediumAffinity(mediumAffinity), reloadTime(reloadTime), range(range), energy(energy),
-     knockback(knockback), stunTime(stunTime), slowdownFactor(slowdownFactor), muzzleFlash(muzzleFlash), muzzleFlashPosition(muzzleFlashPosition) {}
+     knockback(knockback), stunTime(stunTime), slowdownFactor(slowdownFactor), muzzleFlash(muzzleFlash), muzzleFlashPosition(muzzleFlashPosition),
+      fireSound(fireSound), reloadSound(reloadSound) {}
 
     float fireTime;
     int maxAmmo;
@@ -339,6 +389,9 @@ struct Gun {
 
     Emitter muzzleFlash;
     Vector2 muzzleFlashPosition;
+
+    Sound fireSound;
+    Sound reloadSound;
 };
 
 enum struct BodyTypes {
@@ -363,14 +416,21 @@ enum struct CharacterStates {
     Size // Cast to int to return number of states, useful for hashmaps
 };
 
+enum struct CharacterSounds {
+    HURT,
+    JUMP,
+    RUN,
+    CHARGE
+};
+
 class Character {
 public:
     Character(b2WorldId worldId, Vector2 initialPosition, Vector2 bodySize, Vector2 hurtBoxSize, float moveSpeed, float jumpForce, float maxHealth, float maxMedium, float mediumChargeRate,
-        CharacterTypes characterType, MeleeWeapon equippedWeapon, Gun equippedGun, SpriteSettings spriteSettings, std::vector<Skill> availableSkills);
+        CharacterTypes characterType, MeleeWeapon equippedWeapon, Gun equippedGun, SpriteSettings spriteSettings, std::vector<Skill> availableSkills, std::unordered_map<CharacterSounds, Sound> sounds);
     ~Character();
 
     void Update();
-    void Draw();
+    void Draw(bool animated);
 
     // Public getters for character state if needed by external classes
     Vector2 GetPosition() const { return position; }
@@ -427,11 +487,15 @@ private:
     std::unordered_map<CharacterStates, float> timers;
     std::unordered_map<CharacterStates, bool> states;
 
+    std::unordered_map<CharacterSounds, Sound> sounds;
+
     bool isFacingRight = true;
 
     int currentFrame = 0;
     int maxFrame = 1;
     float frameTimer = 0.0f;
+    float shaderTimer = 0.0f;
+
     AnimationStates animationState;
     SpriteSettings spriteSet;
 
@@ -454,9 +518,9 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
 
 struct BodyMaterial {
     BodyMaterial(Texture2D texture, Texture2D debrisTexture, int textureNumShapes, int debrisTextureNumShapes,
-         float density, float energyCapacity, float debrisEnergyCapacity, Emitter emitter) :
+         float density, float energyCapacity, float debrisEnergyCapacity, Emitter emitter, Sound sound) :
     texture(texture), textureNumShapes(textureNumShapes), density(density), energyCapacity(energyCapacity), debrisTexture(debrisTexture),
-     debrisTextureNumShapes(debrisTextureNumShapes), debrisEnergyCapacity(debrisEnergyCapacity), emitter(emitter) {};
+     debrisTextureNumShapes(debrisTextureNumShapes), debrisEnergyCapacity(debrisEnergyCapacity), emitter(emitter), sound(sound) {};
     Texture2D texture;
     Texture2D debrisTexture;
     int textureNumShapes;
@@ -465,6 +529,7 @@ struct BodyMaterial {
     float energyCapacity;
     float debrisEnergyCapacity;
     Emitter emitter;
+    Sound sound;
 };
 
 class DestructibleBody {
@@ -525,32 +590,36 @@ protected:
 class FreeDebris : public Debris {
 public:
     FreeDebris(b2WorldId worldId, Vector2 initialPosition, float initialRotation, float energyCapacity, b2Polygon polygonShape, Texture2D texture,
-         int textureNumShapes, Emitter emitter) :
+         int textureNumShapes, Emitter emitter, Sound sound) :
         Debris(worldId, initialPosition, initialRotation, energyCapacity, polygonShape), texture(texture), textureNumShapes(textureNumShapes),
-         emitter(emitter) {};
+         emitter(emitter), sound(sound) {};
     void Draw();
 
 private:
     Texture2D texture;
     int textureNumShapes;
     Emitter emitter;
+    Sound sound;
 
     void DestroyShape(b2ShapeId shape) override;
 };
 
 class Level {
 public:
-    Level(GameInstance* gameInstance, b2WorldId worldId, Shader postProcessingShader, std::vector<Character*> characters, std::vector<DestructibleBody*> destructibleBodies, 
-        std::vector<FreeDebris*> freeDebrisInstances, std::vector<SpriteElement> backgroundElements, std::vector<SpriteElement> foregroundElements)
-     : gameInstance(gameInstance), world(worldId), postProcessingShader(postProcessingShader), camera({ 0 }), characters(characters), destructibleBodies(destructibleBodies), freeDebrisInstances(freeDebrisInstances), 
-     backgroundElements(backgroundElements), foregroundElements(foregroundElements), font(LoadFont(DEFAULT_FONT)) {
+    Level(GameInstance* gameInstance, b2WorldId worldId, std::string title, std::string subtitle, Shader postProcessingShader, Shader transitionShader, Shader levelEndShader, std::vector<Character*> characters, std::vector<DestructibleBody*> destructibleBodies, 
+        std::vector<FreeDebris*> freeDebrisInstances, std::vector<Vector2> navigationNodes, std::vector<SpriteElement> backgroundElements, std::vector<SpriteElement> foregroundElements, Music music)
+     : gameInstance(gameInstance), world(worldId), title(title), subtitle(subtitle), postProcessingShader(postProcessingShader), transitionShader(transitionShader), levelEndShader(levelEndShader), camera({ 0 }), characters(characters), destructibleBodies(destructibleBodies), freeDebrisInstances(freeDebrisInstances), 
+     navigationNodes(navigationNodes), backgroundElements(backgroundElements), foregroundElements(foregroundElements), font(LoadFont(DEFAULT_FONT)), time(0.0f), levelEndTime(0.0f), paused(false), music(music) {
         camera.target = { 0.0f, 0.0f };
         camera.offset = { (float)SCREEN_WIDTH / 2, (float)SCREEN_HEIGHT / 2 };
         camera.rotation = 0.0f;
         camera.zoom = 1.5f;
 
         renderTexture = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
-     }
+        transitionTexture = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+        levelEndTexture = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
+
     ~Level() = default; // Use default destructor as unique_ptrs handle memory
 
     void LoadLevel();
@@ -561,16 +630,32 @@ public:
     bool IsPaused() const { return paused; }
 
 private:
+    void HandleCamera();
+    void HandlePauseMenu();
+
+    void HandleAI();
+
     GameInstance* gameInstance;
     b2WorldId world;
     Camera2D camera;
 
+    std::string title;
+    std::string subtitle;
+
     Shader postProcessingShader;
     RenderTexture2D renderTexture;
+
+    Shader transitionShader;
+    RenderTexture2D transitionTexture;
+
+    Shader levelEndShader;
+    RenderTexture2D levelEndTexture;
 
     std::vector<Character*> characters;
     std::vector<DestructibleBody*> destructibleBodies;
     std::vector<FreeDebris*> freeDebrisInstances;
+
+    std::vector<Vector2> navigationNodes = {};
 
     std::vector<SpriteElement> backgroundElements;
     std::vector<SpriteElement> foregroundElements;
@@ -579,9 +664,17 @@ private:
 
     bool loaded = true;
     bool paused = false;
+
+    float time;
+    float levelEndTime;
+
+    Music music;
 };
 
 class GameInstance {
+private:
+    // Hashmap of information that must persist across screens, like character selections
+    std::unordered_map<std::string, std::string> loadIds;
 public:
     GameInstance(std::string startingMenu);
     Menu* currentMenu;
@@ -590,9 +683,10 @@ public:
 
     Font font;
 
+    void SetLoadId(std::string key, std::string value) { loadIds[key] = value; }
     void Update();
     void SetMenu(std::string name);
-    void SetLevel(std::string name, std::vector<std::string> characterLoadIds);
+    void SetLevel(std::string name);
 };
 
 // JSON Loaders

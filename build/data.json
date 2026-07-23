@@ -15,14 +15,11 @@
             "height": 120.0,
             "hurtBoxWidth": 30.0,
             "hurtBoxHeight": 60.0,
-            "shaders": {
-                "medium": "water_medium.fs",
-                "hurt": "water_hurt.fs",
-                "attack": "water_attack.fs"
-            },
             "sounds": {
                 "hurt": "water_hurt.mp3",
-                "attack": "water_attack.mp3"
+                "jump": "air_jump.mp3",
+                "run": "air_run.mp3",
+                "charge": "air_charge.mp3"
             }
         },
         {
@@ -40,14 +37,11 @@
             "height": 120.0,
             "hurtBoxWidth": 30.0,
             "hurtBoxHeight": 60.0,
-            "shaders": {
-                "medium": "water_medium.fs",
-                "hurt": "water_hurt.fs",
-                "attack": "water_attack.fs"
-            },
             "sounds": {
                 "hurt": "water_hurt.mp3",
-                "attack": "water_attack.mp3"
+                "jump": "air_jump.mp3",
+                "run": "air_run.mp3",
+                "charge": "air_charge.mp3"
             }
         }
     ],
@@ -65,7 +59,8 @@
             "activeTime": 0.1,
             "recoveryTime": 0.05,
             "slowdownFactor": 2.0,
-            "stunTime": 1.0
+            "stunTime": 1.0,
+            "sound": "sword.mp3"
         },
         {
             "name": "staff",
@@ -79,7 +74,8 @@
             "activeTime": 0.05,
             "recoveryTime": 0.02,
             "slowdownFactor": 1.5,
-            "stunTime": 0.5
+            "stunTime": 0.5,
+            "sound": "staff.mp3"
         }
     ],
 
@@ -98,7 +94,9 @@
             "stunTime": 0.1,
             "muzzleFlash": "muzzle_flash",
             "muzzleFlashPositionX": 100.0,
-            "muzzleFlashPositionY": -40.0
+            "muzzleFlashPositionY": -40.0,
+            "fireSound": "glock.wav",
+            "reloadSound": "reload.wav"
         },
         {
             "name": "smg",
@@ -114,7 +112,9 @@
             "stunTime": 0.05,
             "muzzleFlash": "muzzle_flash",
             "muzzleFlashPositionX": 70.0,
-            "muzzleFlashPositionY": -20.0
+            "muzzleFlashPositionY": -20.0,
+            "fireSound": "smg.ogg",
+            "reloadSound": "reload.wav"
         },
         {
             "name": "shotgun",
@@ -130,7 +130,9 @@
             "stunTime": 0.6,
             "muzzleFlash": "muzzle_flash",
             "muzzleFlashPositionX": 0.0,
-            "muzzleFlashPositionY": 0.0
+            "muzzleFlashPositionY": 0.0,
+            "fireSound": "shotgun.wav",
+            "reloadSound": "reload.wav"
         }
     ],
 
@@ -158,7 +160,8 @@
             "activeTime": 0.75,
             "recoveryTime": 0.0,
             "slowdownFactor": 10.0,
-            "stunTime": 0.5
+            "stunTime": 0.5,
+            "sound": "cyclone.mp3"
         },
         {
             "name": "tsunami",
@@ -183,7 +186,8 @@
             "activeTime": 0.1,
             "recoveryTime": 0.05,
             "slowdownFactor": 2.0,
-            "stunTime": 0.75
+            "stunTime": 0.75,
+            "sound": "cyclone.mp3"
         },
         {
             "name": "tornado",
@@ -208,7 +212,8 @@
             "activeTime": 0.50,
             "recoveryTime": 0.0,
             "slowdownFactor": 10.0,
-            "stunTime": 0.5
+            "stunTime": 0.5,
+            "sound": "woosh.wav"
         },
         {
             "name": "pressure",
@@ -221,7 +226,7 @@
             "upHitBoxHeight": 0.0,
             "downHitBoxWidth": 0.0,
             "downHitBoxHeight": 0.0,
-            "forwardHitBoxWidth": 240.0,
+            "forwardHitBoxWidth": 10000.0,
             "forwardHitBoxHeight": 120.0,
             "backwardHitBoxWidth": 0.0,
             "backwardHitBoxHeight": 0.0,
@@ -233,7 +238,8 @@
             "activeTime": 0.1,
             "recoveryTime": 0.05,
             "slowdownFactor": 2.0,
-            "stunTime": 0.75
+            "stunTime": 0.75,
+            "sound": "woosh.wav"
         }
     ],
 
@@ -242,19 +248,29 @@
         {
             "name": "water",
             "spriteScale": 1.25,
-            "framesPerSecond": 12.0,
             "spriteOffsetX": -120.0,
             "spriteOffsetY": -20.0,
             "frameCounts": {
-                "idle": 1,
+                "idle": 2,
                 "jump": 1,
                 "run": 4,
                 "windup": 1,
                 "active": 1,
                 "recovery": 1,
-                "gun": 1,
-                "stun": 1,
-                "charge": 1
+                "gun": 2,
+                "charge": 2,
+                "stun": 1
+            },
+            "frameRates" : {
+                "idle": 6.0,
+                "jump": 12.0,
+                "run": 12.0,
+                "windup": 12.0,
+                "active": 12.0,
+                "recovery": 12.0,
+                "gun": 12.0,
+                "charge": 6.0,
+                "stun": 12.0
             },
             "shaders": {
                 "idle": "water_idle.fs",
@@ -264,26 +280,36 @@
                 "active": "water_active.fs",
                 "recovery": "water_recovery.fs",
                 "gun": "water_gun.fs",
-                "stun": "water_stun.fs",
-                "charge": "water_charge.fs"
+                "stun": "stun.fs",
+                "charge": "glitch.fs"
             }
         },
         {
             "name": "air",
             "spriteScale": 1.25,
-            "framesPerSecond": 12.0,
             "spriteOffsetX": -120.0,
             "spriteOffsetY": -20.0,
             "frameCounts": {
-                "idle": 1,
+                "idle": 2,
                 "jump": 1,
                 "run": 2,
                 "windup": 1,
                 "active": 1,
                 "recovery": 1,
-                "gun": 1,
+                "gun": 2,
                 "stun": 1,
-                "charge": 1
+                "charge": 2
+            },
+            "frameRates" : {
+                "idle": 6.0,
+                "jump": 12.0,
+                "run": 12.0,
+                "windup": 12.0,
+                "active": 12.0,
+                "recovery": 12.0,
+                "gun": 12.0,
+                "stun": 12.0,
+                "charge": 6.0
             },
             "shaders": {
                 "idle": "water_idle.fs",
@@ -293,8 +319,8 @@
                 "active": "water_active.fs",
                 "recovery": "water_recovery.fs",
                 "gun": "water_gun.fs",
-                "stun": "water_stun.fs",
-                "charge": "water_charge.fs"
+                "stun": "stun.fs",
+                "charge": "bloom.fs"
             }
         }
     ],
@@ -303,14 +329,17 @@
         {
             "name": "cyclone",
             "shader": "",
+            "texture": "particles/default.png",
             "velocityXMin": -100.0,
             "velocityXMax": 100.0,
             "velocityYMin": -2000.0,
             "velocityYMax": 0.0,
             "accelerationX": 0.0,
             "accelerationY": 4000.0,
-            "scaleMin": 10.0,
-            "scaleMax": 20.0,
+            "scaleMin": 0.25,
+            "scaleMax": 0.5,
+            "rotationMin": 0.0,
+            "rotationMax": 0.0,
             "lifetimeMin": 1.0,
             "lifetimeMax": 2.0,
             "numParticles": 100,
@@ -330,17 +359,20 @@
         {
             "name": "tsunami",
             "shader": "",
+            "texture": "particles/default.png",
             "velocityXMin": 500.0,
             "velocityXMax": 4000.0,
             "velocityYMin": -200.0,
             "velocityYMax": 0.0,
             "accelerationX": 0.0,
             "accelerationY": 4000.0,
-            "scaleMin": 10.0,
-            "scaleMax": 20.0,
+            "scaleMin": 0.125,
+            "scaleMax": 0.25,
+            "rotationMin": 0.0,
+            "rotationMax": 0.0,
             "lifetimeMin": 1.0,
             "lifetimeMax": 2.0,
-            "numParticles": 100,
+            "numParticles": 400,
             "colorBound1": {
                 "r": 94.0,
                 "g": 176.0,
@@ -357,14 +389,17 @@
         {
         "name": "tornado",
             "shader": "",
+            "texture": "particles/air.png",
             "velocityXMin": -100.0,
             "velocityXMax": 100.0,
             "velocityYMin": -2000.0,
             "velocityYMax": 0.0,
             "accelerationX": 0.0,
-            "accelerationY": 4000.0,
-            "scaleMin": 10.0,
-            "scaleMax": 20.0,
+            "accelerationY": 0.0,
+            "scaleMin": 0.25,
+            "scaleMax": 0.5,
+            "rotationMin": 0.0,
+            "rotationMax": 360.0,
             "lifetimeMin": 1.0,
             "lifetimeMax": 2.0,
             "numParticles": 100,
@@ -372,7 +407,7 @@
                 "r": 255.0,
                 "g": 255.0,
                 "b": 255.0,
-                "a": 200.0
+                "a": 255.0
             },
             "colorBound2": {
                 "r": 255.0,
@@ -384,14 +419,17 @@
         {
             "name": "pressure",
             "shader": "",
+            "texture": "particles/air.png",
             "velocityXMin": 0.0,
             "velocityXMax": 4000.0,
             "velocityYMin": -10.0,
             "velocityYMax": 10.0,
             "accelerationX": 0.0,
             "accelerationY": 0.0,
-            "scaleMin": 10.0,
-            "scaleMax": 20.0,
+            "scaleMin": 0.25,
+            "scaleMax": 0.5,
+            "rotationMin": 0.0,
+            "rotationMax": 360.0,
             "lifetimeMin": 1.0,
             "lifetimeMax": 2.0,
             "numParticles": 100,
@@ -399,7 +437,7 @@
                 "r": 255.0,
                 "g": 255.0,
                 "b": 255.0,
-                "a": 200.0
+                "a": 255.0
             },
             "colorBound2": {
                 "r": 255.0,
@@ -411,41 +449,47 @@
         {
             "name": "material_burst_default",
             "shader": "",
+            "texture": "particles/default.png",
             "velocityXMin": -200.0,
             "velocityXMax": 200.0,
             "velocityYMin": -200.0,
             "velocityYMax": 200.0,
             "accelerationX": 0.0,
             "accelerationY": 0.0,
-            "scaleMin": 10.0,
-            "scaleMax": 20.0,
+            "scaleMin": 0.1,
+            "scaleMax": 0.2,
+            "rotationMin": 0.0,
+            "rotationMax": 0.0,
             "lifetimeMin": 0.01,
             "lifetimeMax": 0.2,
             "numParticles": 100,
             "colorBound1": {
-                "r": 255.0,
-                "g": 170.0,
-                "b": 0.0,
-                "a": 220.0
+                "r": 50.0,
+                "g": 40.0,
+                "b": 30.0,
+                "a": 255.0
             },
             "colorBound2": {
-                "r": 255.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 50.0
+                "r": 60.0,
+                "g": 50.0,
+                "b": 40.0,
+                "a": 255.0
             }
         },
         {
             "name": "muzzle_flash",
             "shader": "",
+            "texture": "particles/default.png",
             "velocityXMin": -200.0,
             "velocityXMax": 200.0,
             "velocityYMin": -200.0,
             "velocityYMax": 200.0,
             "accelerationX": 0.0,
             "accelerationY": 0.0,
-            "scaleMin": 10.0,
-            "scaleMax": 20.0,
+            "scaleMin": 0.25,
+            "scaleMax": 0.5,
+            "rotationMin": 0.0,
+            "rotationMax": 0.0,
             "lifetimeMin": 0.01,
             "lifetimeMax": 0.2,
             "numParticles": 100,
@@ -467,155 +511,914 @@
     "materials": [
         {
             "name": "dirt",
-            "texture": "dirt.png",
+            "texture": "materials/dirt.png",
             "textureNumSquares": 2,
-            "debrisTexture": "dirt.png",
+            "debrisTexture": "materials/dirt.png",
             "debrisTextureNumSquares": 2,
             "density": 1.0,
             "energyCapacity": 100.0,
             "debrisEnergyCapacity": 500.0,
-            "particle": "material_burst_default"
+            "particle": "material_burst_default",
+            "sound": "impact_dirt"
         },
         {
             "name": "stone_barrier",
-            "texture": "stone.png",
+            "texture": "materials/stone.png",
             "textureNumSquares": 2,
-            "debrisTexture": "stone.png",
+            "debrisTexture": "materials/stone.png",
             "debrisTextureNumSquares": 2,
             "density": 1.0,
             "energyCapacity": 10000.0,
             "debrisEnergyCapacity": 500.0,
-            "particle": "material_burst_default"
+            "particle": "material_burst_default",
+            "sound": "impact_stone"
         }
     ],
 
     "menus": [
         {
             "name": "title_screen",
-            "shader": "",
-            "optionImagePositionX": 0.0,
-            "optionImagePositionY": 0.0,
-            "optionSubtextPositionX": 0.0,
-            "optionSubtextPositionY": 0.0,
+            "menuShader": "menu_fluid.fs",
+            "transitionShader": "transition.fs",
+            "backgroundTexture": "menu/background.png",
+            "music": "level_select",
             "options": [
                 {
-                    "text": "Start",
-                    "positionX": 0.0,
-                    "positionY": 100.0,
+                    "text": "Singleplayer Match",
+                    "positionX": 0.0, "positionY": 100.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
                     "scale": 64.0,
+                    "hoverImageScale": 1.0,
                     "subtext": "",
-                    "screenToLoad": "village",
-                    "isLevel": true,
+                    "screenToLoad": "player_1_select",
+                    "isLevel": false,
                     "image": "",
-                    "imageScale": 1.0,
+                    "hoverImage": "",
                     "centered": true,
-                    "color": {
-                        "r": 255.0,
-                        "g": 255.0,
-                        "b": 255.0,
-                        "a": 255.0
-                    }
-                }
-            ],
-            "textElements": [
-                {
-                    "text": "MEDIUM",
-                    "positionX": 0.0,
-                    "positionY": -60.0,
-                    "scale": 128.0,
-                    "color": {
-                        "r": 255.0,
-                        "g": 255.0,
-                        "b": 255.0,
-                        "a": 255.0
-                    },
-                    "centered": true
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 200.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
                 },
                 {
-                    "text": "Portfolio Demo",
-                    "positionX": 0.0,
-                    "positionY": 50.0,
-                    "scale": 32.0,
-                    "color": {
-                        "r": 255.0,
-                        "g": 255.0,
-                        "b": 255.0,
-                        "a": 255.0
-                    },
-                    "centered": true
+                    "text": "Multiplayer Match",
+                    "positionX": 0.0, "positionY": 160.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "player_1_select_multiplayer",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 200.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
+                },
+                {
+                    "text": "How to Play",
+                    "positionX": 0.0, "positionY": 220.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "tutorial",
+                    "isLevel": true,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 200.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
                 }
             ],
             "imageElements": [
                 {
-                    "texture": "placeholder.png",
-                    "positionX": 0.0,
-                    "positionY": 0.0,
+                    "texture": "menu/wordmark.png",
+                    "positionX": 0.0, "positionY": -100,
                     "scale": 1.0,
                     "centered": true
                 }
             ]
-        }
-    ],
-    
-    "music" : [
+            },
+            {
+            "name": "player_1_select",
+            "menuShader": "character_select.fs",
+            "transitionShader": "transition.fs",
+            "backgroundTexture": "menu/background.png",
+            "music": "level_select",
+            "options": [
+                {
+                    "text": "Back",
+                    "positionX": -900.0, "positionY": 400.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "title_screen",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": false,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
+                },
+                {
+                    "text": "",
+                    "image": "menu/water_button.png",
+                    "hoverImage": "menu/water_portrait.png",
+                    "positionX": 1050, "positionY": 150.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "cpu_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_1",
+                    "instanceIdValue": "water"
+                },
+                {
+                    "text": "",
+                    "image": "menu/air_button.png",
+                    "hoverImage": "menu/air_portrait.png",
+                    "positionX": 1050, "positionY": 375.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "cpu_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_1",
+                    "instanceIdValue": "air"
+                },
+                {
+                    "text": "",
+                    "image": "menu/earth_button.png",
+                    "hoverImage": "menu/earth_portrait.png",
+                    "positionX": 1050, "positionY": 600.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "cpu_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_1",
+                    "instanceIdValue": "earth"
+                }
+            ],
+            "textElements": [
+                {
+                    "text": "Player: Select Character",
+                    "positionX": -900.0,
+                    "positionY": -500.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    },
+                    "centered": false
+                }
+            ],
+            "imageElements": [
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 150.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 375.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 600.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/circle.png",
+                    "positionX": -800, "positionY": -350,
+                    "scale": 0.6,
+                    "centered": false
+                }
+            ]
+        },
+            {
+            "name": "player_1_select_multiplayer",
+            "menuShader": "character_select.fs",
+            "transitionShader": "transition.fs",
+            "backgroundTexture": "menu/background.png",
+            "music": "level_select",
+            "options": [
+                {
+                    "text": "Back",
+                    "positionX": -900.0, "positionY": 400.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "title_screen",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": false,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
+                },
+                {
+                    "text": "",
+                    "image": "menu/water_button.png",
+                    "hoverImage": "menu/water_portrait.png",
+                    "positionX": 1050, "positionY": 150.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "player_2_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_1",
+                    "instanceIdValue": "water"
+                },
+                {
+                    "text": "",
+                    "image": "menu/air_button.png",
+                    "hoverImage": "menu/air_portrait.png",
+                    "positionX": 1050, "positionY": 375.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "player_2_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_1",
+                    "instanceIdValue": "air"
+                },
+                {
+                    "text": "",
+                    "image": "menu/earth_button.png",
+                    "hoverImage": "menu/earth_portrait.png",
+                    "positionX": 1050, "positionY": 600.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "player_2_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_1",
+                    "instanceIdValue": "earth"
+                }
+            ],
+            "textElements": [
+                {
+                    "text": "Player 1: Select Character",
+                    "positionX": -900.0,
+                    "positionY": -500.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    },
+                    "centered": false
+                }
+            ],
+            "imageElements": [
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 150.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 375.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 600.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/circle.png",
+                    "positionX": -800, "positionY": -350,
+                    "scale": 0.6,
+                    "centered": false
+                }
+            ]
+        },
         {
-
-        }
-    ],
-
-    "audio" : [
+            "name": "cpu_select",
+            "menuShader": "character_select_2.fs",
+            "transitionShader": "transition.fs",
+            "backgroundTexture": "menu/background.png",
+            "music": "level_select",
+            "options": [
+                {
+                    "text": "Back",
+                    "positionX": -900.0, "positionY": 400.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "player_1_select",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": false,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
+                },
+                {
+                    "text": "",
+                    "image": "menu/water_button.png",
+                    "hoverImage": "menu/water_portrait.png",
+                    "positionX": 1050, "positionY": 150.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "stage_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_2",
+                    "instanceIdValue": "water"
+                },
+                {
+                    "text": "",
+                    "image": "menu/air_button.png",
+                    "hoverImage": "menu/air_portrait.png",
+                    "positionX": 1050, "positionY": 375.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "stage_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_2",
+                    "instanceIdValue": "air"
+                },
+                {
+                    "text": "",
+                    "image": "menu/earth_button.png",
+                    "hoverImage": "menu/earth_portrait.png",
+                    "positionX": 1050, "positionY": 600.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "stage_select",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_2",
+                    "instanceIdValue": "earth"
+                }
+            ],
+            "textElements": [
+                {
+                    "text": "Computer: Select Character",
+                    "positionX": -900.0,
+                    "positionY": -500.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    },
+                    "centered": false
+                }
+            ],
+            "imageElements": [
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 150.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 375.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 600.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/circle.png",
+                    "positionX": -800, "positionY": -350,
+                    "scale": 0.6,
+                    "centered": false
+                }
+            ]
+        },
         {
-            
-        }
+            "name": "player_2_select",
+            "menuShader": "character_select_2.fs",
+            "transitionShader": "transition.fs",
+            "backgroundTexture": "menu/background.png",
+            "music": "level_select",
+            "options": [
+                {
+                    "text": "Back",
+                    "positionX": -900.0, "positionY": 400.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "player_1_select",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": false,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
+                },
+                {
+                    "text": "",
+                    "image": "menu/water_button.png",
+                    "hoverImage": "menu/water_portrait.png",
+                    "positionX": 1050, "positionY": 150.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "stage_select_multiplayer",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_2",
+                    "instanceIdValue": "water"
+                },
+                {
+                    "text": "",
+                    "image": "menu/air_button.png",
+                    "hoverImage": "menu/air_portrait.png",
+                    "positionX": 1050, "positionY": 375.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "stage_select_multiplayer",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_2",
+                    "instanceIdValue": "air"
+                },
+                {
+                    "text": "",
+                    "image": "menu/earth_button.png",
+                    "hoverImage": "menu/earth_portrait.png",
+                    "positionX": 1050, "positionY": 600.0,
+                    "hoverImagePositionX": -800, "hoverImagePositionY": -350,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 0.2,
+                    "hoverImageScale": 0.3,
+                    "subtext": "",
+                    "screenToLoad": "stage_select_multiplayer",
+                    "isLevel": false,
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 100.0, "g": 100.0, "b": 255.0, "a": 255.0},
+                    "instanceIdKey": "character_2",
+                    "instanceIdValue": "earth"
+                }
+            ],
+            "textElements": [
+                {
+                    "text": "Player 2: Select Character",
+                    "positionX": -900.0,
+                    "positionY": -500.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    },
+                    "centered": false
+                }
+            ],
+            "imageElements": [
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 150.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 375.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/locked_button.png",
+                    "positionX": 1500, "positionY": 600.0,
+                    "scale": 0.2,
+                    "centered": true
+                },
+                {
+                    "texture": "menu/circle.png",
+                    "positionX": -800, "positionY": -350,
+                    "scale": 0.6,
+                    "centered": false
+                }
+            ]
+        },
+        {
+            "name": "stage_select",
+            "menuShader": "menu.fs",
+            "transitionShader": "transition.fs",
+            "backgroundTexture": "menu/background.png",
+            "music": "level_select",
+            "options": [
+                {
+                    "text": "Back",
+                    "positionX": -900.0, "positionY": 400.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "cpu_select",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": false,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
+                },
+                {
+                    "text": "Blood Forest",
+                    "positionX": 0.0, "positionY": -150.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "forest",
+                    "isLevel": true,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "player_2_type",
+                    "instanceIdValue": "cpu"
+                },
+                {
+                    "text": "Underground",
+                    "positionX": 0.0, "positionY": -90.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "player_1_select_multiplayer",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "player_2_type",
+                    "instanceIdValue": "cpu"
+                }
+            ],
+            "textElements": [
+                {
+                    "text": "Select Stage",
+                    "positionX": -900.0,
+                    "positionY": -500.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    },
+                    "centered": false
+                },
+                {
+                    "text": "???",
+                    "positionX": 0.0,
+                    "positionY": -30.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 155.0
+                    },
+                    "centered": true
+                },
+                {
+                    "text": "???",
+                    "positionX": 0.0,
+                    "positionY": 30.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 155.0
+                    },
+                    "centered": true
+                },
+                {
+                    "text": "???",
+                    "positionX": 0.0,
+                    "positionY": 90.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 155.0
+                    },
+                    "centered": true
+                },
+                {
+                    "text": "???",
+                    "positionX": 0.0,
+                    "positionY": 150.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 155.0
+                    },
+                    "centered": true
+                }
+            ],
+            "imageElements": []
+            },
+            {
+            "name": "stage_select_multiplayer",
+            "menuShader": "menu.fs",
+            "transitionShader": "transition.fs",
+            "backgroundTexture": "menu/background.png",
+            "music": "level_select",
+            "options": [
+                {
+                    "text": "Back",
+                    "positionX": -900.0, "positionY": 400.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "player_2_select",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": false,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "",
+                    "instanceIdValue": ""
+                },
+                {
+                    "text": "Blood Forest",
+                    "positionX": 0.0, "positionY": -150.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "forest",
+                    "isLevel": true,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "player_2_type",
+                    "instanceIdValue": "player"
+                },
+                {
+                    "text": "Underground",
+                    "positionX": 0.0, "positionY": -90.0,
+                    "hoverImagePositionX": 0.0, "hoverImagePositionY": 0.0,
+                    "subtextPositionX": 0.0, "subtextPositionY": 0.0,
+                    "scale": 64.0,
+                    "hoverImageScale": 1.0,
+                    "subtext": "",
+                    "screenToLoad": "player_1_select_multiplayer",
+                    "isLevel": false,
+                    "image": "",
+                    "hoverImage": "",
+                    "centered": true,
+                    "color": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 255.0},
+                    "hoverColor": {"r": 255.0, "g": 255.0, "b": 255.0, "a": 100.0},
+                    "instanceIdKey": "player_2_type",
+                    "instanceIdValue": "player"
+                }
+            ],
+            "textElements": [
+                {
+                    "text": "Select Stage",
+                    "positionX": -900.0,
+                    "positionY": -500.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 255.0
+                    },
+                    "centered": false
+                },
+                {
+                    "text": "???",
+                    "positionX": 0.0,
+                    "positionY": -30.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 155.0
+                    },
+                    "centered": true
+                },
+                {
+                    "text": "???",
+                    "positionX": 0.0,
+                    "positionY": 30.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 155.0
+                    },
+                    "centered": true
+                },
+                {
+                    "text": "???",
+                    "positionX": 0.0,
+                    "positionY": 90.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 155.0
+                    },
+                    "centered": true
+                },
+                {
+                    "text": "???",
+                    "positionX": 0.0,
+                    "positionY": 150.0,
+                    "scale": 64.0,
+                    "color": {
+                        "r": 255.0,
+                        "g": 255.0,
+                        "b": 255.0,
+                        "a": 155.0
+                    },
+                    "centered": true
+                }
+            ],
+            "imageElements": []
+            }
     ],
     
     "levels": [
         {
-            "name": "village",
+            "name": "forest",
+            "title": "Blood Forest",
+            "subtitle": "Strife to the death.",
             "postProcessingShader": "forest_overlay.fs",
-            "backgroundMusic": "default",
+            "transitionShader": "level_start.fs",
+            "levelEndShader": "level_end.fs",
+            "music": "default",
             "player1PositionX": -500.0,
-            "player1PositionY": 275.0,
+            "player1PositionY": 175.0,
             "player2PositionX": 500.0,
-            "player2PositionY": 275.0,
+            "player2PositionY": 175.0,
             "backgroundElements": [
                 {
-                    "texture": "trees_3.png",
+                    "texture": "layers/trees_3.png",
                     "parallax": 0.5,
                     "loopX": true,
                     "loopY": true,
-                    "scale": 0.15,
+                    "scale": 0.6,
                     "offsetX": 0.0,
                     "offsetY": 0.0
                 },
                 {
-                    "texture": "trees_2.png",
+                    "texture": "layers/trees_2.png",
                     "parallax": 0.7,
                     "loopX": true,
                     "loopY": true,
-                    "scale": 0.15,
+                    "scale": 0.6,
                     "offsetX": 0.0,
                     "offsetY": 0.0
                 },
                 {
-                    "texture": "trees_1.png",
+                    "texture": "layers/trees_1.png",
                     "parallax": 0.9,
                     "loopX": true,
                     "loopY": true,
-                    "scale": 0.15,
+                    "scale": 0.6,
                     "offsetX": 0.0,
                     "offsetY": 0.0
                 }
             ],
             "foregroundElements": [
                 {
-                    "texture": "forest_foreground.png",
-                    "parallax": 1.0,
+                    "texture": "layers/foreground_2.png",
+                    "parallax": 1.15,
                     "loopX": true,
                     "loopY": false,
-                    "scale": 1.0,
+                    "scale": 0.6,
                     "offsetX": 0.0,
-                    "offsetY": 0.0
+                    "offsetY": 700.0
+                },
+                {
+                    "texture": "layers/foreground_1.png",
+                    "parallax": 1.3,
+                    "loopX": true,
+                    "loopY": false,
+                    "scale": 0.6,
+                    "offsetX": 0.0,
+                    "offsetY": 780.0
                 }
             ],
             "destructibleBodies": [

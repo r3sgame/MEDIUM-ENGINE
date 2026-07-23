@@ -13,6 +13,10 @@ float RandomFloatRange(float min, float max) {
     return (float)(rand()) / (float)(RAND_MAX) * (max - min) + min;
 }
 
+Vector2 Interpolate (Vector2 a, Vector2 b, float t) {
+    return Vector2({a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t});
+}
+
 bool CheckInput(InputTypes input,  CharacterTypes characterType) {
     if (characterType == CharacterTypes::PLAYER_1) {
         switch (input) {
@@ -60,10 +64,10 @@ bool CheckInput(InputTypes input,  CharacterTypes characterType) {
 }
 
 void DrawLoadingScreen() {
-    DrawRectangle(0 - GetScreenWidth() / 2, 0 - GetScreenHeight() / 2, GetScreenWidth(), GetScreenHeight(), BLACK);
+    DrawRectangle(0 - (float)GetScreenWidth() / 2, 0 - (float)GetScreenHeight() / 2, (float)GetScreenWidth(), (float)GetScreenHeight(), BLACK);
     Font font = LoadFont(DEFAULT_FONT);
-    DrawTextEx(font, "Now Loading...", (Vector2){0 - MeasureTextEx(font, "Now Loading...", SUBTEXT_SIZE, 0.0f).x / 2,
-        0}, SUBTEXT_SIZE, 0.0f, WHITE);
+    DrawTextEx(font, "Now Loading...", (Vector2){(float)GetScreenWidth() / 2 - MeasureTextEx(font, "Now Loading...", SUBTEXT_SIZE, 0.0f).x / 2,
+        (float)GetScreenHeight() / 2}, SUBTEXT_SIZE, 0.0f, WHITE);
     EndMode2D();
     EndDrawing();
 }
@@ -73,13 +77,13 @@ void DrawTextureLoopX(Texture2D texture, float width, float height, Vector2 elem
     DrawTextureEx(texture, textureCameraOrigin, 0, scale, WHITE);
 
     Vector2 rightTextureCameraOrigin = {textureCameraOrigin.x + width, textureCameraOrigin.y};
-    while (rightTextureCameraOrigin.x < cameraPosition.x + SCREEN_WIDTH * (1 / zoom)) {
+    while (rightTextureCameraOrigin.x < cameraPosition.x + (float)GetScreenWidth() * (1 / zoom)) {
         DrawTextureEx(texture, rightTextureCameraOrigin, 0, scale, WHITE);
         rightTextureCameraOrigin.x += width;
     }
 
     Vector2 leftTextureCameraOrigin = {textureCameraOrigin.x - width, textureCameraOrigin.y};
-    while (leftTextureCameraOrigin.x + width > cameraPosition.x - SCREEN_WIDTH * (1 / zoom)) {
+    while (leftTextureCameraOrigin.x + width > cameraPosition.x - (float)GetScreenWidth() * (1 / zoom)) {
         DrawTextureEx(texture, leftTextureCameraOrigin, 0, scale, WHITE);
         leftTextureCameraOrigin.x -= width;
     }
@@ -90,13 +94,13 @@ void DrawTextureLoopY(Texture2D texture, float width, float height, Vector2 elem
     DrawTextureEx(texture, textureCameraOrigin, 0, scale, WHITE);
 
     Vector2 bottomTextureCameraOrigin = {textureCameraOrigin.x, textureCameraOrigin.y + height};
-    while (bottomTextureCameraOrigin.y < cameraPosition.y + SCREEN_HEIGHT * (1 / zoom)) {
+    while (bottomTextureCameraOrigin.y < cameraPosition.y + (float)GetScreenHeight() * (1 / zoom)) {
         DrawTextureEx(texture, bottomTextureCameraOrigin, 0, scale, WHITE);
         bottomTextureCameraOrigin.y += height;
     }
 
     Vector2 topTextureCameraOrigin = {textureCameraOrigin.x, textureCameraOrigin.y - height};
-    while (topTextureCameraOrigin.y + height > cameraPosition.y - SCREEN_HEIGHT * (1 / zoom)) {
+    while (topTextureCameraOrigin.y + height > cameraPosition.y - (float)GetScreenHeight() * (1 / zoom)) {
         DrawTextureEx(texture, topTextureCameraOrigin, 0, scale, WHITE);
         topTextureCameraOrigin.y -= height;
     }
@@ -188,15 +192,6 @@ bool OverlapCallback(b2ShapeId shapeId, void* context)
     return true;
 }
 
-// Helper function to create a circle texture for particles
-Texture2D CreateCircleParticleTexture(int size, Color color) {
-    Image image = GenImageColor(size, size, BLANK); // Start with transparent
-    ImageDrawCircle(&image, size / 2, size / 2, size / 2, color);
-    Texture2D texture = LoadTextureFromImage(image);
-    UnloadImage(image);
-    return texture;
-}
-
 // Function to find an object by a name attribute
 json FindObjectByName(const json& jsonArray, const std::string& name) {
     // Check if the JSON value is an array
@@ -227,28 +222,41 @@ Menu* LoadMenu(std::string name, GameInstance* gameInstance) {
         json data = json::parse(f);
         json menuData = FindObjectByName(data["menus"], name);
 
-        Shader menuShader = LoadShader(0, (std::string("resources/shaders/") + std::string(GLSL_VERSION) + menuData["shader"].get<std::string>()).c_str());
-        Vector2 optionImagePosition = (Vector2){menuData["optionImagePositionX"].get<float>(), menuData["optionImagePositionY"].get<float>()};
-        Vector2 optionSubtextPosition = (Vector2){menuData["optionSubtextPositionX"].get<float>(), menuData["optionSubtextPositionY"].get<float>()};
+        Shader menuShader = LoadShader(0, (std::string(SHADER_FOLDER) + std::string(GLSL_VERSION) + std::string("/") + menuData["menuShader"].get<std::string>()).c_str());
+        Shader transitionShader = LoadShader(0, (std::string(SHADER_FOLDER) + std::string(GLSL_VERSION) + std::string("/") + menuData["transitionShader"].get<std::string>()).c_str());
+
+        Texture2D backgroundTexture = LoadTexture((std::string(SPRITE_FOLDER) + menuData["backgroundTexture"].get<std::string>()).c_str());
 
         // Load Options
         for (int i = 0; i < menuData["options"].size(); i++) {
             Vector2 optionPosition = (Vector2){menuData["options"][i]["positionX"].get<float>(), menuData["options"][i]["positionY"].get<float>()};
+            Vector2 hoverImagePosition = (Vector2){menuData["options"][i]["hoverImagePositionX"].get<float>(), menuData["options"][i]["hoverImagePositionY"].get<float>()};
+            Vector2 subTextPosition = (Vector2){menuData["options"][i]["subtextPositionX"].get<float>(), menuData["options"][i]["subtextPositionY"].get<float>()};
+            
             float optionScale = menuData["options"][i]["scale"].get<float>();
+            float hoverImageScale = menuData["options"][i]["hoverImageScale"].get<float>();
 
             std::string optionName = menuData["options"][i]["text"].get<std::string>();
             std::string optionSubtext = menuData["options"][i]["subtext"].get<std::string>();
             std::string optionScreenToLoad = menuData["options"][i]["screenToLoad"].get<std::string>();
 
             bool isLevel = menuData["options"][i]["isLevel"].get<bool>();
-            float imageScale = menuData["options"][i]["imageScale"].get<float>();
-            Texture2D optionImage = LoadTexture((std::string("resources/sprites/materials/") + menuData["options"][i]["image"].get<std::string>()).c_str());
+            Texture2D optionImage = LoadTexture((std::string(SPRITE_FOLDER) + menuData["options"][i]["image"].get<std::string>()).c_str());
+            Texture2D hoverImage = LoadTexture((std::string(SPRITE_FOLDER) + menuData["options"][i]["hoverImage"].get<std::string>()).c_str());
 
             bool optionCentered = menuData["options"][i]["centered"].get<bool>();
             Color optionColor = (Color){(unsigned char)menuData["options"][i]["color"]["r"].get<float>(), (unsigned char)menuData["options"][i]["color"]["g"].get<float>(),
                 (unsigned char)menuData["options"][i]["color"]["b"].get<float>(), (unsigned char)menuData["options"][i]["color"]["a"].get<float>()};
 
-            options.push_back(Option(optionPosition, optionScale, optionName, optionSubtext, optionImage, imageScale, optionScreenToLoad, isLevel, optionCentered, optionColor));
+            Color hoverColor = (Color){(unsigned char)menuData["options"][i]["hoverColor"]["r"].get<float>(), 
+                (unsigned char)menuData["options"][i]["hoverColor"]["g"].get<float>(), (unsigned char)menuData["options"][i]["hoverColor"]["b"].get<float>(), 
+                (unsigned char)menuData["options"][i]["hoverColor"]["a"].get<float>()};
+
+            std::string instanceIdKey = menuData["options"][i]["instanceIdKey"].get<std::string>();
+            std::string instanceIdValue = menuData["options"][i]["instanceIdValue"].get<std::string>();
+
+            options.push_back(Option(optionPosition, hoverImagePosition, subTextPosition, optionScale, hoverImageScale, optionName, optionSubtext,  
+                optionImage, hoverImage, optionScreenToLoad, isLevel, optionCentered, optionColor, hoverColor, instanceIdKey, instanceIdValue));
         }
 
         // Load Text Elements
@@ -265,7 +273,7 @@ Menu* LoadMenu(std::string name, GameInstance* gameInstance) {
 
         // Load Image Elements
         for (int i = 0; i < menuData["imageElements"].size(); i++) {
-            Texture2D imageElementTexture = LoadTexture((std::string("resources/sprites/menu/") + menuData["imageElements"][i]["texture"].get<std::string>()).c_str());
+            Texture2D imageElementTexture = LoadTexture((std::string(SPRITE_FOLDER) + menuData["imageElements"][i]["texture"].get<std::string>()).c_str());
             Vector2 imagePosition = (Vector2){menuData["imageElements"][i]["positionX"].get<float>(), menuData["imageElements"][i]["positionY"].get<float>()};
             float imageScale = menuData["imageElements"][i]["scale"].get<float>();
             bool imageCentered = menuData["imageElements"][i]["centered"].get<bool>();
@@ -273,19 +281,19 @@ Menu* LoadMenu(std::string name, GameInstance* gameInstance) {
             imageElements.push_back(ImageElement(imageElementTexture, imagePosition, imageScale, imageCentered));
         }
 
-        Menu* menu = new Menu(gameInstance, options, textElements, imageElements, optionSubtextPosition, optionImagePosition);
+        //Load Music
+        Music menuMusic = LoadMusicStream((std::string(AUDIO_FOLDER) + menuData["music"].get<std::string>()).c_str());
+
+        Menu* menu = new Menu(gameInstance, options, textElements, imageElements, menuShader, transitionShader, backgroundTexture, menuMusic);
         menu->EnterMenu();
 
         return menu;
 
     } catch (const std::exception& e) {
-        std::cerr << "Error (Loading Default Menu): " << e.what() << std::endl;
+        std::cerr << "Error when loading menu: " << e.what() << std::endl;
         
-        Shader blankShader = LoadShader(0, (std::string("resources/shaders/") + std::string(GLSL_VERSION) + std::string("/identity.fs")).c_str());
-        Menu* menu = new Menu(gameInstance, options, textElements, imageElements, (Vector2){0, 0}, (Vector2){0, 0});
-        menu->EnterMenu();
-
-        return menu;
+        CloseWindow();
+        std::exit(EXIT_FAILURE);
     }
 }
 
@@ -297,9 +305,10 @@ Emitter LoadParticleEmitter(std::string name) {
         json data = json::parse(f);
         json particleData = FindObjectByName(data["particles"], name);
 
-        std::string shaderFilePath = std::string("resources/shaders/") + std::string(GLSL_VERSION) + std::string("/");
+        std::string shaderFilePath = std::string(SHADER_FOLDER) + std::string(GLSL_VERSION) + std::string("/");
 
         Shader shader = LoadShader(0, (shaderFilePath + particleData["shader"].get<std::string>()).c_str());
+        Texture2D texture = LoadTexture((std::string(SPRITE_FOLDER) + particleData["texture"].get<std::string>()).c_str());
 
         Vector2 velocityMax = (Vector2){particleData["velocityXMax"].get<float>(), particleData["velocityYMax"].get<float>()};
         Vector2 velocityMin = (Vector2){particleData["velocityXMin"].get<float>(), particleData["velocityYMin"].get<float>()};
@@ -308,6 +317,9 @@ Emitter LoadParticleEmitter(std::string name) {
 
         float lifetimeMin = particleData["lifetimeMin"].get<float>();
         float lifetimeMax = particleData["lifetimeMax"].get<float>();
+
+        float rotationMin = particleData["rotationMin"].get<float>();
+        float rotationMax = particleData["rotationMax"].get<float>();
 
         int numParticles = particleData["numParticles"].get<int>();
 
@@ -322,31 +334,17 @@ Emitter LoadParticleEmitter(std::string name) {
         Color colorBound2 = (Color){colorBound2Data["r"].get<unsigned char>(), colorBound2Data["g"].get<unsigned char>(),
              colorBound2Data["b"].get<unsigned char>(), colorBound2Data["a"].get<unsigned char>()};
         
-        Emitter emitter = Emitter(shader, velocityMin, velocityMax, acceleration, scaleMin,
-             scaleMax, lifetimeMin, lifetimeMax, numParticles, colorBound1, colorBound2);
+        Emitter emitter = Emitter(shader, texture, velocityMin, velocityMax, acceleration, scaleMin,
+             scaleMax, lifetimeMin, lifetimeMax, rotationMin, rotationMax, numParticles, colorBound1, colorBound2);
 
         return emitter;
 
     } catch (const std::exception& e) {
         // CATCH-ALL BLOCK: Inline implementation of the default emitter logic
-        std::cerr << "Load particle failed (" << e.what() << "). Initializing blank emitter." << std::endl;
+        std::cerr << "Load particle failed:" << e.what() << std::endl;
         
-        Shader shader = LoadShader(0, 0);
-
-        Vector2 velocityMax = (Vector2){0, 0};
-        Vector2 velocityMin = (Vector2){0, 0};
-        Vector2 acceleration = (Vector2){0, 0};
-        float scaleMin = 0;
-        float scaleMax = 0;
-        float lifetimeMin = 0;
-        float lifetimeMax = 0;
-        int numParticles = 0;
-        Color colorBound1 = (Color){0, 0, 0, 0};
-        Color colorBound2 = (Color){0, 0, 0, 0};
-        
-        Emitter emitter = Emitter(shader, velocityMin, velocityMax, acceleration, scaleMin,
-             scaleMax, lifetimeMin, lifetimeMax, numParticles, colorBound1, colorBound2);
-        return emitter;
+        CloseWindow();
+        std::exit(EXIT_FAILURE);
     }
 }
 
@@ -370,10 +368,12 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
         float meleeStunTime = meleeWeaponData["stunTime"].get<float>();
         float meleeSlowdownFactor = meleeWeaponData["slowdownFactor"].get<float>();
 
+        Sound meleeSound = LoadSound((std::string(AUDIO_FOLDER) + meleeWeaponData["sound"].get<std::string>()).c_str());
+
         std::cout << "Character: Loaded Melee Weapon" << std::endl;
 
         MeleeWeapon meleeWeapon(meleeHitBox, meleeDamage, meleeMediumAffinity, meleeEnergy, meleeKnockback, meleeWindupTime,
-             meleeActiveTime, meleeRecoveryTime, meleeStunTime, meleeSlowdownFactor);
+             meleeActiveTime, meleeRecoveryTime, meleeStunTime, meleeSlowdownFactor, meleeSound);
 
         // Load Gun
         json gunData = FindObjectByName(data["guns"], characterData["gun"]);
@@ -392,14 +392,18 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
         Emitter muzzleFlash = LoadParticleEmitter(gunData["muzzleFlash"]);
         Vector2 muzzleFlashPosition = (Vector2){gunData["muzzleFlashPositionX"].get<float>(), gunData["muzzleFlashPositionY"].get<float>()};
 
+        Sound fireSound = LoadSound((std::string(AUDIO_FOLDER) + gunData["fireSound"].get<std::string>()).c_str());
+        Sound reloadSound = LoadSound((std::string(AUDIO_FOLDER) + gunData["reloadSound"].get<std::string>()).c_str());
+
         std::cout << "Character: Loaded Gun" << std::endl;
 
         Gun gun(fireTime, ammo, gunDamage, gunMediumAffinity, reloadTime,
-             range, gunEnergy, gunKnockback, gunStunTime, gunSlowdownFactor, muzzleFlash, muzzleFlashPosition);
+             range, gunEnergy, gunKnockback, gunStunTime, gunSlowdownFactor, muzzleFlash, muzzleFlashPosition, fireSound, reloadSound);
 
         // Load SpriteSettings
         json spriteSettingsData = FindObjectByName(data["spriteSettings"], characterData["spriteSettings"]);
         json frameCountsData = spriteSettingsData["frameCounts"];
+        json frameRatesData = spriteSettingsData["frameRates"];
         json shaderData = spriteSettingsData["shaders"];
 
         std::unordered_map< AnimationStates, int> frameCounts;
@@ -414,9 +418,21 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
         frameCounts[AnimationStates::STUN] = frameCountsData["stun"].get<int>();
         frameCounts[AnimationStates::CHARGE] = frameCountsData["charge"].get<int>();
 
+        std::unordered_map< AnimationStates, float> frameRates;
+
+        frameRates[AnimationStates::IDLE] = frameRatesData["idle"].get<float>();
+        frameRates[AnimationStates::JUMP] = frameRatesData["jump"].get<float>();
+        frameRates[AnimationStates::RUN] = frameRatesData["run"].get<float>();
+        frameRates[AnimationStates::WINDUP] = frameRatesData["windup"].get<float>();
+        frameRates[AnimationStates::ACTIVE] = frameRatesData["active"].get<float>();
+        frameRates[AnimationStates::RECOVERY] = frameRatesData["recovery"].get<float>();
+        frameRates[AnimationStates::GUN] = frameRatesData["gun"].get<float>();
+        frameRates[AnimationStates::STUN] = frameRatesData["stun"].get<float>();
+        frameRates[AnimationStates::CHARGE] = frameRatesData["charge"].get<float>();
+
         std::unordered_map< AnimationStates, Shader> shaders;
 
-        std::string shaderFilePath = std::string("resources/shaders/") + std::string(GLSL_VERSION) + std::string("/");
+        std::string shaderFilePath = std::string(SHADER_FOLDER) + std::string(GLSL_VERSION) + std::string("/");
 
         shaders[AnimationStates::IDLE] = LoadShader(0, (shaderFilePath + shaderData["idle"].get<std::string>()).c_str());
         shaders[AnimationStates::JUMP] = LoadShader(0, (shaderFilePath + shaderData["jump"].get<std::string>()).c_str());
@@ -428,14 +444,11 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
         shaders[AnimationStates::STUN] = LoadShader(0, (shaderFilePath + shaderData["stun"].get<std::string>()).c_str());
         shaders[AnimationStates::CHARGE] = LoadShader(0, (shaderFilePath + shaderData["charge"].get<std::string>()).c_str());
 
-        std::cout << "Character: Loaded Frame Counts" << std::endl;
-
         Vector2 spriteOffset = (Vector2){spriteSettingsData["spriteOffsetX"].get<float>(), spriteSettingsData["spriteOffsetY"].get<float>()};
         std::string folderName = spriteSettingsData["name"].get<std::string>();
         float spriteScale = spriteSettingsData["spriteScale"].get<float>();
-        float framesPerSecond = spriteSettingsData["framesPerSecond"].get<float>();
 
-        SpriteSettings spriteSettings(spriteOffset, folderName, spriteScale, framesPerSecond, frameCounts, shaders);
+        SpriteSettings spriteSettings(spriteOffset, folderName, spriteScale, frameCounts, frameRates, shaders);
 
         std::cout << "Character: Loaded Sprite Settings" << std::endl;
 
@@ -465,12 +478,12 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
                 AnimationStates animationState = ( AnimationStates)skillData["animationState"].get<int>();
                 InputTypes input = ( InputTypes)skillData["input"].get<int>();
 
-                //Particles
-                Emitter particles = LoadParticleEmitter(skillData["particle"].get<std::string>()); 
-                std::cout << "Character: Loaded Particle" << std::endl;
+                Emitter particles = LoadParticleEmitter(skillData["particle"].get<std::string>());
+
+                Sound skillSound = LoadSound((std::string(AUDIO_FOLDER) + skillData["sound"].get<std::string>()).c_str());
 
                 skills.push_back(Skill(force, upHitBox, downHitBox, forwardHitBox, backwardHitBox, skillEnergy, skillDamage, 
-                    mediumCost, skillKnockback, skillWindupTime, skillActiveTime, skillRecoveryTime, skillStunTime, skillSlowdownFactor, animationState, input, particles));
+                    mediumCost, skillKnockback, skillWindupTime, skillActiveTime, skillRecoveryTime, skillStunTime, skillSlowdownFactor, animationState, input, particles, skillSound));
             }
         }
         
@@ -485,93 +498,33 @@ Character* LoadCharacter(b2WorldId world, std::string characterName, Vector2 ini
         float medium = characterData["medium"].get<float>();
         float mediumChargeRate = characterData["mediumChargeRate"].get<float>();
 
+        std::cout << "Character: Loaded Stats" << std::endl;
+
+        // Load Sounds
+        std::unordered_map< CharacterSounds, Sound> sounds;
+        sounds[CharacterSounds::HURT] = LoadSound((std::string("resources/sounds/") + characterData["sounds"]["hurt"].get<std::string>()).c_str());
+        sounds[CharacterSounds::JUMP] = LoadSound((std::string("resources/sounds/") + characterData["sounds"]["jump"].get<std::string>()).c_str());
+        sounds[CharacterSounds::RUN] = LoadSound((std::string("resources/sounds/") + characterData["sounds"]["run"].get<std::string>()).c_str());
+        sounds[CharacterSounds::CHARGE] = LoadSound((std::string("resources/sounds/") + characterData["sounds"]["charge"].get<std::string>()).c_str());
+        
+        std::cout << "Character: Loaded Sounds" << std::endl;
+
         Character* character = new Character(world, initialPosition, size, hurtBoxSize, moveSpeed, jumpForce, health, medium, mediumChargeRate,
-             characterType, meleeWeapon, gun, spriteSettings, skills);
+             characterType, meleeWeapon, gun, spriteSettings, skills, sounds);
+
         std::cout << "Character: Finished Loading" << std::endl;
+
         return character;
 
     } catch (json::exception& e) {
-        std::cerr << "JSON parsing error (loading default character): " << e.what() << std::endl;
+        std::cerr << "JSON parsing error when loading character: " << e.what() << std::endl;
 
     } catch (...) {
-        std::cerr << "Character load error, loading default character." << std::endl;
+        std::cerr << "Generic character load error." << std::endl;
     }
 
-    // Create default character
-    // Sprite Setting parameters
-    Vector2 spriteOffset = {-120.0f, -20.0f};
-    float spriteScale = 1.25f;
-    float framesPerSecond = 12.0f;
-    std::unordered_map< AnimationStates, int> frameCounts;
-
-    frameCounts[AnimationStates::IDLE] = 1;
-    frameCounts[AnimationStates::JUMP] = 1;
-    frameCounts[AnimationStates::RUN] = 4;
-    frameCounts[AnimationStates::WINDUP] = 1;
-    frameCounts[AnimationStates::ACTIVE] = 1;
-    frameCounts[AnimationStates::RECOVERY] = 1;
-    frameCounts[AnimationStates::GUN] = 1;
-    frameCounts[AnimationStates::STUN] = 1;
-    frameCounts[AnimationStates::CHARGE] = 1;
-
-    std::unordered_map<AnimationStates, Shader> shaders;
-    shaders[AnimationStates::IDLE] = LoadShader("water", "idle");
-    shaders[AnimationStates::JUMP] = LoadShader("water", "jump");
-    shaders[AnimationStates::RUN] = LoadShader("water", "run");
-    shaders[AnimationStates::WINDUP] = LoadShader("water", "windup");
-    shaders[AnimationStates::ACTIVE] = LoadShader("water", "active");
-    shaders[AnimationStates::RECOVERY] = LoadShader("water", "recovery");
-    shaders[AnimationStates::GUN] = LoadShader("water", "gun");
-    shaders[AnimationStates::STUN] = LoadShader("water", "stun");
-    shaders[AnimationStates::CHARGE] = LoadShader("water", "charge");
-
-    std::string folderName = "water";
-    SpriteSettings defaultSpriteSettings(spriteOffset, folderName, spriteScale, framesPerSecond, frameCounts, shaders);
-    
-    // Melee Weapon parameters
-    Vector2 hitBox = { 100.0f, 70.0f };
-    float damage = 5;
-    float energy = 5.0f;
-    float knockback = 10.0f;
-    float windupTime = 0.05f;
-    float activeTime = 0.1f;
-    float recoveryTime = 0.05f;
-    float stunTime = 0.5f;
-    float slowdownFactor = 2.0f;
-    float mediumAffinity = 10;
-
-    MeleeWeapon defaultMeleeWeapon(hitBox, damage, mediumAffinity, energy, knockback, windupTime, activeTime, stunTime, recoveryTime, slowdownFactor);
-
-    // Gun parameters
-    float fireRate = 0.2f;
-    int maxAmmo = 10;
-    damage = 2;
-    float reloadTime = 3.0f;
-    float range = 1000.0f;
-    energy = 50.0f;
-    stunTime = 0.5f;
-    slowdownFactor = 2.0f;
-    mediumAffinity = 5;
-    Emitter muzzleFlash = LoadParticleEmitter("blank");
-    Vector2 muzzleFlashPosition = {0.0f, 0.0f};
-
-    Gun defaultGun(fireRate, maxAmmo, damage, mediumAffinity, reloadTime, range, energy, knockback,
-         stunTime, slowdownFactor, muzzleFlash, muzzleFlashPosition);
-    
-    // Player parameters
-    Vector2 size = {60.0f, 120.0f};
-    Vector2 hurtBox = {30.0f, 60.0f};
-    float moveSpeed = 190.0f * 4.0f;
-    float jumpForce = 450.0f * 4.0f;
-    float maxHealth = 100;
-    float maxMedium = 100;
-    float mediumChargeRate = 100;
-    
-    std::vector<Skill> defaultSkills;
-
-    Character* defaultCharacter = new Character(world, initialPosition, size, hurtBox, moveSpeed, jumpForce, maxHealth, maxMedium, mediumChargeRate,
-        characterType, defaultMeleeWeapon, defaultGun, defaultSpriteSettings, defaultSkills);
-    return defaultCharacter;
+    CloseWindow();
+    std::exit(EXIT_FAILURE);
 }
 
 Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::string> characterLoadIds) {
@@ -587,12 +540,17 @@ Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::
     std::vector<SpriteElement> backgroundElements;
     std::vector<SpriteElement> foregroundElements;
 
-    Shader identityShader = LoadShader(0, (std::string("resources/shaders/") + std::string(GLSL_VERSION) + std::string("/identity.fs")).c_str());
+    Shader identityShader = LoadShader(0, (std::string(SHADER_FOLDER) + std::string(GLSL_VERSION) + std::string("/identity.fs")).c_str());
 
     try {
         std::ifstream f("data.json");
         json data = json::parse(f);
         json levelData = FindObjectByName(data["levels"], name);
+
+        std::string title = levelData["title"].get<std::string>();
+        std::string subtitle = levelData["subtitle"].get<std::string>();
+
+        std::cout << "Level: Loaded Metadata" << std::endl;
 
         for (int i = 0; i < characterLoadIds.size(); i++) {
             if (i == 0) {
@@ -617,17 +575,18 @@ Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::
                  // Load Material
                 json materialData = FindObjectByName(data["materials"], destructibleBodyData["material"]);
 
-                Texture2D texture = LoadTexture(("resources/sprites/materials/" + materialData["texture"].get<std::string>()).c_str());
-                Texture2D debrisTexture = LoadTexture(("resources/sprites/materials/" + materialData["debrisTexture"].get<std::string>()).c_str());
+                Texture2D texture = LoadTexture((SPRITE_FOLDER + materialData["texture"].get<std::string>()).c_str());
+                Texture2D debrisTexture = LoadTexture((SPRITE_FOLDER + materialData["debrisTexture"].get<std::string>()).c_str());
                 int textureNumShapes = materialData["textureNumSquares"].get<int>();
                 int debrisTextureNumShapes = materialData["debrisTextureNumSquares"].get<int>();
                 float density = materialData["density"].get<float>();
                 float energyCapacity = materialData["energyCapacity"].get<float>();
                 float debrisEnergyCapacity = materialData["debrisEnergyCapacity"].get<float>();
                 Emitter emitter = LoadParticleEmitter(materialData["particle"].get<std::string>());
+                Sound sound = LoadSound((AUDIO_FOLDER + materialData["sound"].get<std::string>()).c_str());
 
                 BodyMaterial material(texture, debrisTexture, textureNumShapes, debrisTextureNumShapes,
-                     density, energyCapacity, debrisEnergyCapacity, emitter);
+                     density, energyCapacity, debrisEnergyCapacity, emitter, sound);
 
                 destructibleBodies.push_back(new DestructibleBody(worldId, material, position, rotation * (PI / 180), dynamic, width,
                  height, squareSize));
@@ -665,8 +624,10 @@ Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::
             Texture2D debrisTexture = LoadTexture(materialData["debrisTexture"].get<std::string>().c_str());
             int textureNumShapes = materialData["debrisTextureNumShapes"].get<int>();
             Emitter emitter = LoadParticleEmitter(materialData["emitter"].get<std::string>());
+            Sound sound = LoadSound((AUDIO_FOLDER + materialData["sound"].get<std::string>()).c_str());
 
-            debrisInstances.push_back(new FreeDebris(worldId, position, rotation, energyCapacity, polygon, debrisTexture, textureNumShapes, emitter));
+            debrisInstances.push_back(new FreeDebris(worldId, position, rotation, energyCapacity, polygon, debrisTexture, 
+                textureNumShapes, emitter, sound));
         }
 
         std::cout << "Level: Loaded Debris Instances" << std::endl;
@@ -681,7 +642,7 @@ Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::
             bool loopX = backgroundElementData["loopX"].get<bool>();
             bool loopY = backgroundElementData["loopY"].get<bool>();
 
-            std::string textureName = "resources/sprites/layers/" + backgroundElementData["texture"].get<std::string>();
+            std::string textureName = SPRITE_FOLDER + backgroundElementData["texture"].get<std::string>();
             Texture2D texture = LoadTexture(textureName.c_str());
 
             backgroundElements.push_back(SpriteElement(offset, scale, texture, parallax, loopX, loopY));
@@ -697,7 +658,7 @@ Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::
             bool loopX = foregroundElementData["loopX"].get<bool>();
             bool loopY = foregroundElementData["loopY"].get<bool>();
 
-            std::string textureName = "resources/sprites/layers/" + foregroundElementData["texture"].get<std::string>();
+            std::string textureName = SPRITE_FOLDER + foregroundElementData["texture"].get<std::string>();
             Texture2D texture = LoadTexture(textureName.c_str());
 
             foregroundElements.push_back(SpriteElement(offset, scale, texture, parallax, loopX, loopY));
@@ -705,33 +666,29 @@ Level* LoadLevel(std::string name, GameInstance* gameInstance, std::vector<std::
 
         std::cout << "Level: Loaded Background Elements" << std::endl;
 
-        Shader postProcessingShader = LoadShader(0, (std::string("resources/shaders/") + std::string(GLSL_VERSION) + std::string("/")
+        Shader postProcessingShader = LoadShader(0, (std::string(SHADER_FOLDER) + std::string(GLSL_VERSION) + std::string("/")
          + levelData["postProcessingShader"].get<std::string>()).c_str());
+        Shader transitionShader = LoadShader(0, (std::string(SHADER_FOLDER) + std::string(GLSL_VERSION) + std::string("/")
+         + levelData["transitionShader"].get<std::string>()).c_str());
+        Shader levelEndShader = LoadShader(0, (std::string(SHADER_FOLDER) + std::string(GLSL_VERSION) + std::string("/")
+         + levelData["levelEndShader"].get<std::string>()).c_str());
 
-        std::cout << "Level: Loaded Shader" << std::endl;
+        std::cout << "Level: Loaded Shaders" << std::endl;
 
-        Level *level = new Level(gameInstance,worldId, postProcessingShader, characters, destructibleBodies, debrisInstances, backgroundElements, foregroundElements);
+        // Load Music
+        Music music = LoadMusicStream((std::string(AUDIO_FOLDER) + levelData["music"].get<std::string>()).c_str());
+
+        Level *level = new Level(gameInstance, worldId, title, subtitle, postProcessingShader, transitionShader, levelEndShader, characters,
+             destructibleBodies, debrisInstances, backgroundElements, foregroundElements, music);
         return level;
     } catch (json::exception& e) {
-        std::cerr << "JSON parsing error (loading default level): " << e.what() << std::endl;
+        std::cerr << "JSON parsing error when loading level: " << e.what() << std::endl;
     } catch (...) {
-        std::cerr << "Level load error, loading default level." << std::endl;
+        std::cerr << "Generic level loading error." << std::endl;
     }
 
-    // Load default level
-    characters.push_back(LoadCharacter(worldId, characterLoadIds[0], Vector2{0, 0}, CharacterTypes::PLAYER_1));
-    characters.push_back(LoadCharacter(worldId, characterLoadIds[1], Vector2{0, 0}, CharacterTypes::PLAYER_2));
-
-    //destructibleBodies.push_back(new DestructibleBody(worldId, Vector2{0, 0}, 0, true, 1, 1, 100, 100, 1));
-    //Emitter* destroyedParticles = LoadParticleEmitter("material_burst_default");
-
-    //Default destructible body
-    Emitter blankEmitter = LoadParticleEmitter("material_burst_default");
-    BodyMaterial defaultMaterial = BodyMaterial(LoadTexture("resources/sprites/materials/dirt.png"), LoadTexture("resources/sprites/materials/dirt.png"), 1, 1, 1.0f, 1.0f, 1.0f, blankEmitter);
-    destructibleBodies.push_back(new DestructibleBody(worldId, defaultMaterial, (Vector2){250.0f, 400.0f}, 0.0f, false, 5000.0f, 500.0f, 100.0f));
-
-    Level *defaultLevel = new Level(gameInstance, worldId, identityShader, characters, destructibleBodies, debrisInstances, backgroundElements, foregroundElements);
-    return defaultLevel;
+    CloseWindow();
+    std::exit(EXIT_FAILURE);
 }
 
 int GetFrameIndex(AnimationStates animationState, std::unordered_map<AnimationStates, int> frameCounts) {
@@ -749,98 +706,135 @@ void Menu::EnterMenu() {
     SetTextureFilter(font.texture, TEXTURE_FILTER_BILINEAR);
     loaded = true;
 
+    time = 0.0f;
+
     camera.target = { 0, 0 };
-    camera.offset = { (float)SCREEN_WIDTH / 2, (float)SCREEN_HEIGHT / 2 };
+    camera.offset = { (float)(float)GetScreenWidth() / 2, (float)(float)GetScreenHeight() / 2 };
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
 }
 
 void Menu::ExitMenu() {
+    StopMusicStream(music);
     loaded = false;
     //free(gameInstance);
 }
 
 void Menu::Update() {
+    
+    bool startLoading = false;
+
+    if (!IsMusicStreamPlaying(music)) {
+        PlayMusicStream(music);
+    }
+
     if (loaded) {
-        BeginDrawing();
+        time += GetFrameTime();
+
+        BeginTextureMode(renderTexture);
+        ClearBackground(Color{0, 0, 0, 0});
         BeginMode2D(camera);
-        ClearBackground(MENU_BG_COLOR);
 
-        // Image elements
-        for (int i = 0; i < imageElements.size(); i++) {
-            if (imageElements[i].centered) {
-                DrawTexture(imageElements[i].texture, imageElements[i].position.x - imageElements[i].texture.width / 2,
-                     imageElements[i].position.y - imageElements[i].texture.height / 2, WHITE);
-            } else {
-                DrawTexture(imageElements[i].texture, imageElements[i].position.x, imageElements[i].position.y, WHITE);
-            }
-        }
-
-        // Text elements
-        for (int i = 0; i < textElements.size(); i++) {
-            if (textElements[i].centered) {
-                DrawTextEx(font, textElements[i].text.c_str(), (Vector2){textElements[i].position.x - MeasureTextEx(font, textElements[i].text.c_str(),
-                    textElements[i].scale, 0.0f).x / 2, textElements[i].position.y}, textElements[i].scale, 0.0f, textElements[i].color);
-            } else {
-                DrawTextEx(font, textElements[i].text.c_str(), textElements[i].position, textElements[i].scale, 0.0f, textElements[i].color);
-            }
-        }
-        
-        // Options
-        for (int i = 0; i < options.size(); i++) {
-            Vector2 centerDisplacement = (Vector2){0, 0};
-            if (options[i].centered) {
-                centerDisplacement = (Vector2){MeasureTextEx(font, options[i].text.c_str(), options[i].scale, 0.0f).x / 2, 0};
-            }
-
-            if (options[i].hovered) {
-                DrawTextEx(font, options[i].text.c_str(), options[i].position - centerDisplacement, options[i].scale, 0.0f, (Color){options[i].color.r, options[i].color.g,
-                     options[i].color.b, (unsigned char) (options[i].color.a * HOVER_ALPHA_SHIFT)});
-                DrawTexture(options[i].image, optionImagePosition.x, optionImagePosition.y, WHITE);
-            } else {
-                DrawTextEx(font, options[i].text.c_str(), options[i].position - centerDisplacement, options[i].scale, 0.0f, options[i].color);
-            }
-
-            if (options[i].subtext != "" && options[i].hovered) {
-                DrawText(options[i].subtext.c_str(), optionSubtextPosition.x, optionSubtextPosition.y, SUBTEXT_SIZE, SUBTEXT_COLOR);
-            }
-
-            // Determine if hovered
-            if (CheckCollisionPointRec(GetScreenToWorld2D(GetMousePosition(), camera), (Rectangle){options[i].position.x - centerDisplacement.x,
-                 options[i].position.y, MeasureTextEx(font, options[i].text.c_str(), options[i].scale, 0.0f).x, options[i].scale})) {
-                options[i].hovered = true;
-            } else {
-                options[i].hovered = false;
-            }
-
-            // Handle clicks
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && options[i].hovered) {
-                std::vector<std::string> characterPointers;
-                characterPointers.push_back("water");
-                characterPointers.push_back("air");
-                
-                DrawLoadingScreen();
-
-                if (options[i].isLevel) {
-                    gameInstance->SetLevel(options[i].screenToLoad, characterPointers);
+            // Image elements
+            for (int i = 0; i < imageElements.size(); i++) {
+                if (imageElements[i].centered) {
+                    DrawTextureEx(imageElements[i].texture, (Vector2){imageElements[i].position.x - imageElements[i].texture.width / 2,
+                        imageElements[i].position.y - imageElements[i].texture.height / 2}, 0.0f, imageElements[i].scale, WHITE);
                 } else {
-                    gameInstance->SetMenu(options[i].screenToLoad);
+                    DrawTextureEx(imageElements[i].texture, imageElements[i].position, 0.0f, imageElements[i].scale, WHITE);
+                }
+            }
+
+            // Text elements
+            for (int i = 0; i < textElements.size(); i++) {
+                if (textElements[i].centered) {
+                    DrawTextEx(font, textElements[i].text.c_str(), (Vector2){textElements[i].position.x - MeasureTextEx(font, textElements[i].text.c_str(),
+                        textElements[i].scale, 0.0f).x / 2, textElements[i].position.y}, textElements[i].scale, 0.0f, textElements[i].color);
+                } else {
+                    DrawTextEx(font, textElements[i].text.c_str(), textElements[i].position, textElements[i].scale, 0.0f, textElements[i].color);
+                }
+            }
+
+            // Options
+            for (int i = 0; i < options.size(); i++) {
+                Vector2 centerDisplacement = (Vector2){0, 0};
+                Vector2 imageCenterDisplacement = (Vector2){0, 0};
+
+                if (options[i].centered) {
+                    centerDisplacement = (Vector2){MeasureTextEx(font, options[i].text.c_str(), options[i].scale, 0.0f).x / 2, 0};
+                    imageCenterDisplacement = (Vector2){(float)(options[i].image.width / 2), (float)(options[i].image.height / 2)};
                 }
 
-                ExitMenu();
+                if (options[i].hovered) {
+                    DrawTextureEx(options[i].image, options[i].position - imageCenterDisplacement, 0.0f, options[i].scale, options[i].hoverColor);
+                    DrawTextEx(font, options[i].text.c_str(), options[i].position - centerDisplacement, options[i].scale, 0.0f, options[i].hoverColor);
+                    
+                    DrawTextureEx(options[i].hoverImage, options[i].hoverImagePosition, 0.0f, options[i].hoverImageScale, WHITE);
+                    DrawText(options[i].subtext.c_str(), options[i].subtextPosition.x, options[i].subtextPosition.y, SUBTEXT_SIZE, SUBTEXT_COLOR);
+                } else {
+                    DrawTextureEx(options[i].image, options[i].position - imageCenterDisplacement, 0.0f, options[i].scale, options[i].color);
+                    DrawTextEx(font, options[i].text.c_str(), options[i].position - centerDisplacement, options[i].scale, 0.0f, options[i].color);
+                }
+
+                // Determine if hovered
+                if (CheckCollisionPointRec(GetScreenToWorld2D(GetMousePosition(), camera), (Rectangle){options[i].position.x - centerDisplacement.x,
+                    options[i].position.y, MeasureTextEx(font, options[i].text.c_str(), options[i].scale, 0.0f).x, options[i].scale}) ||
+                    CheckCollisionPointRec(GetScreenToWorld2D(GetMousePosition(), camera), (Rectangle){options[i].position.x - imageCenterDisplacement.x,
+                    options[i].position.y - imageCenterDisplacement.y, options[i].image.width * options[i].scale, options[i].image.height * options[i].scale})) {
+                    options[i].hovered = true;
+                } else {
+                    options[i].hovered = false;
+                }
+
+                // Handle clicks
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && options[i].hovered) {
+                    
+                    gameInstance->SetLoadId(options[i].instanceIdKey, options[i].instanceIdValue);
+                    
+                    if (options[i].isLevel) {
+                        startLoading = true;
+                        gameInstance->SetLevel(options[i].screenToLoad);
+                    } else {
+                        gameInstance->SetMenu(options[i].screenToLoad);
+                    }
+
+                    ExitMenu();
+                }
             }
         }
 
         EndMode2D();
+        EndTextureMode();
+        
+        BeginDrawing();
+
+        ClearBackground(BLACK);
+        
+        if (startLoading) {
+            DrawLoadingScreen();   
+        } else {
+            // Draw background with shader
+            BeginShaderMode(menuShader);
+            SetShaderValue(menuShader, GetShaderLocation(menuShader, "u_time"), &time, SHADER_UNIFORM_FLOAT);
+            DrawTextureRec(backgroundTexture, (Rectangle){0, 0, (float)(float)GetScreenWidth(), (float)(float)GetScreenHeight()}, (Vector2){0, 0}, WHITE);
+            EndShaderMode();
+
+            // Transition shader
+            BeginShaderMode(transitionShader);
+            SetShaderValue(transitionShader, GetShaderLocation(transitionShader, "u_time"), &time, SHADER_UNIFORM_FLOAT);
+            DrawTextureRec(renderTexture.texture, (Rectangle){0, 0, (float)renderTexture.texture.width, (float)-renderTexture.texture.height}, (Vector2){0, 0}, WHITE);
+            EndShaderMode();
+        }
+
         EndDrawing();
     }
-}
+
 
 // CHARACTER
 Character::Character(b2WorldId worldId, Vector2 initialPosition, Vector2 bodySize, Vector2 hurtBoxSize, float moveSpeed, float jumpForce, float maxHealth, float maxMedium,
-     float mediumChargeRate, CharacterTypes characterType, MeleeWeapon equippedWeapon, Gun equippedGun, SpriteSettings spriteSettings, std::vector<Skill> availableSkills)
+     float mediumChargeRate, CharacterTypes characterType, MeleeWeapon equippedWeapon, Gun equippedGun, SpriteSettings spriteSettings, std::vector<Skill> availableSkills, std::unordered_map<CharacterSounds, Sound> sounds)
     : position(initialPosition), maxHealth(maxHealth), maxMedium(maxMedium), health(maxHealth), medium(maxMedium), chargeRate(mediumChargeRate), characterType(characterType), weapon(equippedWeapon), gun(equippedGun), world(worldId), ammo(equippedGun.maxAmmo),
-    coyoteTimeCounter(0.0f), spriteSet(spriteSettings), moveSpeedPixelsPerSec(moveSpeed), jumpForcePixels(jumpForce), size(bodySize), hurtBox(hurtBoxSize), skills(availableSkills), activeSkill(availableSkills[0])
+    coyoteTimeCounter(0.0f), spriteSet(spriteSettings), moveSpeedPixelsPerSec(moveSpeed), jumpForcePixels(jumpForce), size(bodySize), hurtBox(hurtBoxSize), skills(availableSkills), activeSkill(availableSkills[0]), sounds(sounds)
 {   
     // 1. Define the Box2D Body Definition
     b2BodyDef bodyDef = b2DefaultBodyDef(); // Use default constructor for b2BodyDef
@@ -875,7 +869,7 @@ Character::Character(b2WorldId worldId, Vector2 initialPosition, Vector2 bodySiz
 
     // Initialize raylib rect and position for drawing.
     rect = (Rectangle){ 0, 0, size.x, size.y };
-    position = (Vector2){0, 0};
+    position = initialPosition;
 
     b2Vec2 center = {0.0f, 0.0f};
     float mass = DEFAULT_CHARACTER_MASS;
@@ -1038,9 +1032,11 @@ void Character::SetPosition(Vector2 newPosition) {
     b2Body_SetTransform(body, {newPosition.x * METERS_PER_PIXEL, newPosition.y * METERS_PER_PIXEL}, b2Body_GetRotation(body));
 }
 
-void Character::Draw() {
+void Character::Draw(bool animated) {
     // Determine character's animation state; jump has priority over run
     int selectedIndex = 0;
+
+    shaderTimer += GetFrameTime();
 
     if (!isFacingRight) {
         selectedIndex += spriteSet.totalFrames;
@@ -1076,13 +1072,19 @@ void Character::Draw() {
     }
 
     BeginShaderMode(spriteSet.shaders[animationState]);
-    DrawTextureEx(spriteSet.sprites[currentFrame + selectedIndex], (Vector2){position.x - size.x / 2.0f + spriteSet.offset.x, 
-        position.y - size.y / 2.0f + spriteSet.offset.y}, 0.0f, rect.height * spriteSet.scale / spriteSet.sprites[0].height, WHITE);
+    SetShaderValue(spriteSet.shaders[animationState], GetShaderLocation(spriteSet.shaders[animationState], "u_time"), &shaderTimer, SHADER_UNIFORM_FLOAT);
+    if(animated) {
+        DrawTextureEx(spriteSet.sprites[currentFrame + selectedIndex], (Vector2){position.x - size.x / 2.0f + spriteSet.offset.x, 
+            position.y - size.y / 2.0f + spriteSet.offset.y}, 0.0f, rect.height * spriteSet.scale / spriteSet.sprites[0].height, WHITE);
+    } else {
+        DrawTextureEx(spriteSet.sprites[selectedIndex], (Vector2){position.x - size.x / 2.0f + spriteSet.offset.x, 
+            position.y - size.y / 2.0f + spriteSet.offset.y}, 0.0f, rect.height * spriteSet.scale / spriteSet.sprites[0].height, WHITE);
+    }
     EndShaderMode();
 
     // Update animation frame
     frameTimer += GetFrameTime();
-    if (frameTimer >= 1.0f / spriteSet.framesPerSecond) {
+    if (frameTimer >= 1.0f / spriteSet.frameRates[animationState]) {
         frameTimer = 0.0f;
         currentFrame = (currentFrame + 1) % spriteSet.frameCounts[animationState];
     }
@@ -1113,6 +1115,10 @@ void Character::MoveLeft() {
     }
 
     b2Body_SetLinearVelocity(body, vel);
+
+    if (!IsSoundPlaying(sounds[CharacterSounds::RUN])) {
+        PlaySound(sounds[CharacterSounds::RUN]);
+    }
 }
 
 void Character::MoveRight() {
@@ -1128,9 +1134,15 @@ void Character::MoveRight() {
     }
 
     b2Body_SetLinearVelocity(body, vel);
+
+    if (!IsSoundPlaying(sounds[CharacterSounds::RUN])) {
+        PlaySound(sounds[CharacterSounds::RUN]);
+    }
 }
 
 void Character::Jump() {
+    PlaySound(sounds[CharacterSounds::JUMP]);
+
     coyoteTimeCounter = 0;
 
     b2Vec2 currentVel = b2Body_GetLinearVelocity(body);
@@ -1142,6 +1154,8 @@ void Character::Jump() {
 }
 
 void Character::StartMeleeAttack() {
+    PlaySound(weapon.sound);
+
     states[CharacterStates::WEAPON] = true;
     timers[CharacterStates::WEAPON] = weapon.windupTime + weapon.activeTime + weapon.recoveryTime;
 }
@@ -1161,6 +1175,8 @@ void Character::ProcessMeleeAttack() {
 }
 
 void Character::Shoot() {
+    PlaySound(gun.fireSound);
+
     states[CharacterStates::GUN] = true;
     ammo -= 1;
     timers[CharacterStates::GUN] = gun.fireTime;
@@ -1192,6 +1208,8 @@ void Character::Shoot() {
     }
 
     if (ammo == 0) {
+        PlaySound(gun.reloadSound);
+
         timers[CharacterStates::RELOAD] = gun.reloadTime;
         states[CharacterStates::RELOAD] = true;
     }
@@ -1199,6 +1217,8 @@ void Character::Shoot() {
 
 void Character::StartSkill(Skill skill) {
     //Apply force
+    PlaySound(skill.sound);
+
     b2Body_SetLinearVelocity(body, {0, 0});
     b2Vec2 impulse = {skill.force.x * METERS_PER_PIXEL * b2Body_GetMass(body), -skill.force.y * METERS_PER_PIXEL * b2Body_GetMass(body)};
     b2Body_ApplyLinearImpulse(body, impulse, {0, 0}, true);
@@ -1250,6 +1270,10 @@ void Character::ProcessSkill() {
 }
 
 void Character::Charge() {
+    if (!IsSoundPlaying(sounds[CharacterSounds::CHARGE])) {
+        PlaySound(sounds[CharacterSounds::CHARGE]);
+    }
+
     medium = std::min(GetMaxMedium(), medium + chargeRate * GetFrameTime());
 }
 
@@ -1314,7 +1338,49 @@ void Level::UnloadLevel() {
     b2DestroyWorld(world);
 }
 
+void Level::HandleAI() {
+    for (int i = 0; i < characters.size(); i++) {
+        if (characters[i]->GetCharacterType() == CharacterTypes::CPU && characters[i]->health > 0 && !characters[i]->IsStunned()) {
+            //Behavior Tree
+
+            //Check if player in immediate range
+            if (isFacingRight) {
+                origin = {position.x * METERS_PER_PIXEL + JITTER_TOLERANCE + size.x * METERS_PER_PIXEL / 2.0f, position.y * METERS_PER_PIXEL};
+                translation = {gun.range * METERS_PER_PIXEL, 0.0f};
+            } else {
+                origin = {position.x * METERS_PER_PIXEL - JITTER_TOLERANCE - size.x * METERS_PER_PIXEL / 2.0f, position.y * METERS_PER_PIXEL};
+                translation = {-gun.range * METERS_PER_PIXEL, 0.0f};
+            }
+
+            if (b2IsValidVec2(origin) && b2IsValidVec2(translation)) {
+                RayCastContext context = {0};
+                b2World_CastRay(world, origin, translation, b2DefaultQueryFilter(), RayCastCallback, &context);
+                bool hitCharacter = HandleAttack(gun.damage, gun.energy, gun.knockback, gun.stunTime, b2Body_GetPosition(body), context.shape, true);
+
+                if (hitCharacter) {
+                    medium = std::min(maxMedium, medium + gun.mediumAffinity);
+                }
+            }
+        }
+    }
+}
+
 void Level::Update() {
+
+    bool player1Alive = characters[0]->health > 0;
+    bool player2Alive = characters[1]->health > 0;
+
+    time += GetFrameTime();
+
+    if (!IsMusicStreamPlaying(music)) {
+        PlayMusicStream(music);
+    }
+
+    if (paused) {
+        SetMusicVolume(music, MUSIC_PAUSE_VOLUME);
+    } else {
+        SetMusicVolume(music, 1.0f);
+    }
 
     BeginTextureMode(renderTexture);
 
@@ -1337,32 +1403,32 @@ void Level::Update() {
             (backgroundElements[i].offset.y - height / 2.0f) + cameraPosition.y * parallax};
 
         if (backgroundElements[i].loopX && backgroundElements[i].loopY) {
-            Vector2 viewTopLeft = cameraPosition - (Vector2){(1/zoom) * SCREEN_WIDTH / 2, (1/zoom) * SCREEN_HEIGHT / 2};
+            Vector2 viewTopLeft = cameraPosition - (Vector2){(1/zoom) * (float)GetScreenWidth() / 2, (1/zoom) * (float)GetScreenHeight() / 2};
 
             // 1. Calculate the starting offset (where the texture should start drawing)
             // 'textureWorldX' is the x-coordinate of the tile that should be at viewTopLeft.x
-            float textureWorldX = elementPosition.x + (cameraPosition.x - SCREEN_WIDTH * (1 / zoom) / 2) * parallax;
+            float textureWorldX = elementPosition.x + (cameraPosition.x - (float)GetScreenWidth() / 2) * (1 / zoom) * parallax;
             float offset_x = fmodf(viewTopLeft.x - textureWorldX, texture.width * scale);
-            if (offset_x > 0) offset_x -= texture.width * scale; // Ensure negative offset if needed
+            //if (offset_x > 0) offset_x -= texture.width * scale; // Ensure negative offset if needed
 
             // 'textureWorldY' is the y-coordinate of the tile that should be at viewTopLeft.y
-            float textureWorldY = elementPosition.y + (cameraPosition.y - SCREEN_HEIGHT * (1 / zoom) / 2) * parallax;
+            float textureWorldY = elementPosition.y + (cameraPosition.y - (float)GetScreenHeight() / 2) * (1 / zoom) * parallax;
             float offset_y = fmodf(viewTopLeft.y - textureWorldY, texture.height * scale);
-            if (offset_y > 0) offset_y -= texture.height * scale; // Ensure negative offset if needed
+            //if (offset_y > 0) offset_y -= texture.height * scale; // Ensure negative offset if needed
 
             // 2. Define the source rectangle (The key for tiling/wrapping)
             Rectangle sourceRec = {
-                -offset_x - (SCREEN_HEIGHT * (1 / zoom) + texture.height * scale) / (2 * scale), // The negative offset in texture space (unscaled)
-                -offset_y - (SCREEN_HEIGHT * (1 / zoom) + texture.height * scale) / (2 * scale),
-                (SCREEN_WIDTH * (1 / zoom) + texture.width * scale) / (2 * scale), // Huge width in texture space
-                (SCREEN_HEIGHT * (1 / zoom) + texture.height * scale) / (2 *scale) // Huge height in texture space
+                -offset_x - ((float)GetScreenHeight() * (1 / zoom) + texture.height * scale) / (2 * scale), // The negative offset in texture space (unscaled)
+                -offset_y - ((float)GetScreenHeight() * (1 / zoom) + texture.height * scale) / (2 * scale),
+                ((float)GetScreenWidth() * (1 / zoom) + texture.width * scale) / (2 * scale), // Huge width in texture space
+                ((float)GetScreenHeight() * (1 / zoom) + texture.height * scale) / (2 * scale) // Huge height in texture space
             };
 
             // 3. Draw a single quad that covers the screen
             DrawTexturePro(
                 texture,
                 sourceRec,
-                (Rectangle){ viewTopLeft.x, viewTopLeft.y, SCREEN_WIDTH * (1 / zoom), SCREEN_HEIGHT * (1 / zoom) },
+                (Rectangle){ viewTopLeft.x, viewTopLeft.y, (float)GetScreenWidth() * (1 / zoom), (float)GetScreenHeight() * (1 / zoom) },
                 {0, 0}, 
                 0.0f, 
                 WHITE
@@ -1376,15 +1442,6 @@ void Level::Update() {
             DrawTextureEx(backgroundElements[i].texture, elementPosition, 0, scale, WHITE);
         }
     }
-    
-    // Get the current FPS
-    int fps = GetFPS();
-    // Convert the integer FPS to a string
-    std::string fpsText = "FPS: " + std::to_string(fps);
-
-    // Draw the FPS text on the screen
-    // Arguments: text, posX, posY, fontSize, color
-    DrawText(fpsText.c_str(), 10, 10, 20, DARKGRAY); // Top-left corner, font size 20, dark gray color
 
     // Pause Input
     if (CheckInput(InputTypes::PAUSE, CharacterTypes::PLAYER_1)) paused = !paused;
@@ -1404,59 +1461,130 @@ void Level::Update() {
         }
         
         for (int i = 0; i < characters.size(); i++) {
-            if (characters[i]->health > 0) { 
-                if (!paused) characters[i]->Update();
-                characters[i]->Draw();
+            if (!paused && player1Alive && player2Alive && time > LEVEL_WAIT_TIME) {
+                characters[i]->Update();
+                characters[i]->Draw(true);
+            } else {
+                characters[i]->Draw(false);
             }
         }
     }
 
-    bool player1Alive = characters[0]->health > 0;
-    bool player2Alive = characters[1]->health > 0;
-
     // Determine screen shake
     Vector2 screenShake = {0.0f, 0.0f};
 
-    if (characters[0]->IsShooting() || characters[1]->IsShooting()) {
-        // Random screen shake vector
-        screenShake = {RandomFloatRange(-CAM_SHAKE_SMALL, CAM_SHAKE_SMALL), RandomFloatRange(-CAM_SHAKE_SMALL, CAM_SHAKE_SMALL)};
-    }
+    if (player1Alive && player2Alive && !paused && time > LEVEL_WAIT_TIME) {
+        if (characters[0]->IsShooting() || characters[1]->IsShooting()) {
+            // Random screen shake vector
+            screenShake = {RandomFloatRange(-CAM_SHAKE_SMALL, CAM_SHAKE_SMALL), RandomFloatRange(-CAM_SHAKE_SMALL, CAM_SHAKE_SMALL)};
+        }
 
-    if (characters[0]->IsUsingSkill() || characters[1]->IsUsingSkill() || (characters[0]->IsStunned() && player1Alive)
-     || (characters[1]->IsStunned() && player2Alive)) {
-        // Random screen shake vector
-        screenShake = {RandomFloatRange(-CAM_SHAKE_LARGE, CAM_SHAKE_LARGE), RandomFloatRange(-CAM_SHAKE_LARGE, CAM_SHAKE_LARGE)};
+        if (characters[0]->IsUsingSkill() || characters[1]->IsUsingSkill() || (characters[0]->IsStunned() && player1Alive)
+        || (characters[1]->IsStunned() && player2Alive)) {
+            // Random screen shake vector
+            screenShake = {RandomFloatRange(-CAM_SHAKE_LARGE, CAM_SHAKE_LARGE), RandomFloatRange(-CAM_SHAKE_LARGE, CAM_SHAKE_LARGE)};
+        }
     }
     
     if (characters.size() < 2) {
-        Vector2 newCameraPosition = (Vector2){ cameraPosition.x + CAM_X_INTERPOLATION * (characters[0]->GetPosition().x - cameraPosition.x), 
-            cameraPosition.y + CAM_Y_INTERPOLATION * (characters[0]->GetPosition().y - cameraPosition.y) };
+        Vector2 newCameraPosition = Interpolate(camera.target, characters[0]->GetPosition(), CAM_X_INTERPOLATION);
         camera.target = newCameraPosition;
     } else {
-        Vector2 averageCameraPosition = (Vector2){characters[0]->GetPosition().x + characters[1]->GetPosition().x, characters[0]->GetPosition().y + characters[1]->GetPosition().y} / 2.0f;
+        Vector2 averageCameraPosition = Interpolate(camera.target, (Vector2){characters[0]->GetPosition().x + characters[1]->GetPosition().x, characters[0]->GetPosition().y + characters[1]->GetPosition().y} / 2.0f, CAM_X_INTERPOLATION);
         camera.target = averageCameraPosition + screenShake;
 
         //Get distance between players
-        float distance = Vector2Distance(characters[0]->GetPosition(), characters[1]->GetPosition());
-        camera.zoom = camera.zoom + (std::min(CAM_MAX_ZOOM, CAM_ZOOM_RATE/distance) - camera.zoom) * CAM_ZOOM_INTERPOLATION;
+        Vector2 displacement = characters[0]->GetPosition() - characters[1]->GetPosition();
+
+        if (player1Alive && player2Alive) {
+            camera.zoom = camera.zoom + (std::min(CAM_MAX_ZOOM, (float)(CAM_ZOOM_RATE / sqrt(CAM_ZOOM_X_FACTOR * pow(displacement.x, 2)
+            + CAM_ZOOM_Y_FACTOR * pow(displacement.y, 2)))) - camera.zoom) * CAM_ZOOM_INTERPOLATION;
+        } else {
+            camera.zoom = camera.zoom + (CAM_ZOOM_MATCH_END - camera.zoom) * CAM_ZOOM_INTERPOLATION_MATCH_END;
+        }
+    }
+
+    // Draw foreground elements
+    for (int i = 0; i < foregroundElements.size(); i++) {
+        float scale = foregroundElements[i].scale;
+        float width = foregroundElements[i].texture.width * scale;
+        float height = foregroundElements[i].texture.height * scale;
+        float parallax = foregroundElements[i].parallax;
+        Texture2D texture = foregroundElements[i].texture;
+
+        Vector2 elementPosition = {(foregroundElements[i].offset.x - width / 2.0f) + cameraPosition.x * (1 - parallax), 
+            (foregroundElements[i].offset.y - height / 2.0f) + cameraPosition.y * (1 - parallax)};
+
+        if (foregroundElements[i].loopX && foregroundElements[i].loopY) {
+            Vector2 viewTopLeft = cameraPosition - (Vector2){(1/zoom) * (float)GetScreenWidth() / 2, (1/zoom) * (float)GetScreenHeight() / 2};
+
+            // 1. Calculate the starting offset (where the texture should start drawing)
+            // 'textureWorldX' is the x-coordinate of the tile that should be at viewTopLeft.x
+            float textureWorldX = elementPosition.x + (cameraPosition.x - (float)GetScreenWidth() / 2) * (1 / zoom) * parallax;
+            float offset_x = fmodf(viewTopLeft.x - textureWorldX, texture.width * scale);
+            //if (offset_x > 0) offset_x -= texture.width * scale; // Ensure negative offset if needed
+
+            // 'textureWorldY' is the y-coordinate of the tile that should be at viewTopLeft.y
+            float textureWorldY = elementPosition.y + (cameraPosition.y - (float)GetScreenHeight() / 2) * (1 / zoom) * parallax;
+            float offset_y = fmodf(viewTopLeft.y - textureWorldY, texture.height * scale);
+            //if (offset_y > 0) offset_y -= texture.height * scale; // Ensure negative offset if needed
+
+            // 2. Define the source rectangle (The key for tiling/wrapping)
+            Rectangle sourceRec = {
+                -offset_x - ((float)GetScreenHeight() * (1 / zoom) + texture.height * scale) / (2 * scale), // The negative offset in texture space (unscaled)
+                -offset_y - ((float)GetScreenHeight() * (1 / zoom) + texture.height * scale) / (2 * scale),
+                ((float)GetScreenWidth() * (1 / zoom) + texture.width * scale) / (2 * scale), // Huge width in texture space
+                ((float)GetScreenHeight() * (1 / zoom) + texture.height * scale) / (2 * scale) // Huge height in texture space
+            };
+
+            // 3. Draw a single quad that covers the screen
+            DrawTexturePro(
+                texture,
+                sourceRec,
+                (Rectangle){ viewTopLeft.x, viewTopLeft.y, (float)GetScreenWidth() * (1 / zoom), (float)GetScreenHeight() * (1 / zoom) },
+                {0, 0}, 
+                0.0f, 
+                WHITE
+            );
+
+        } else if (foregroundElements[i].loopX) {
+            DrawTextureLoopX(texture, width, height, elementPosition, cameraPosition, scale, zoom);
+        } else if (foregroundElements[i].loopY) {
+            DrawTextureLoopY(texture, width, height, elementPosition, cameraPosition, scale, zoom);
+        } else {
+            DrawTextureEx(foregroundElements[i].texture, elementPosition, 0, scale, WHITE);
+        }
     }
 
     EndMode2D();
+    EndTextureMode();
+
+    // Transition texture
+    BeginTextureMode(transitionTexture);
+
+    ClearBackground(BLACK);
+
+    DrawTextEx(font, title.c_str(), (Vector2){(float)GetScreenWidth() / 2 - MeasureTextEx(font, title.c_str(),
+        PAUSE_TITLE_SIZE, 0.0f).x / 2, (float)GetScreenHeight() / 2 - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+    DrawTextEx(font, subtitle.c_str(), (Vector2){(float)GetScreenWidth() / 2 - MeasureTextEx(font, subtitle.c_str(),
+        SUBTEXT_SIZE, 0.0f).x / 2, (float)GetScreenHeight() / 2 + PAUSE_OPTION_SPACING}, SUBTEXT_SIZE, 0.0f, WHITE);
+
     EndTextureMode();
     
     BeginDrawing();
 
     ClearBackground(BLACK);
+
     BeginShaderMode(postProcessingShader);
+    SetShaderValue(postProcessingShader, GetShaderLocation(postProcessingShader, "u_time"), &time, SHADER_UNIFORM_FLOAT);
     DrawTextureRec(renderTexture.texture, (Rectangle){ 0, 0, (float)renderTexture.texture.width, (float)-renderTexture.texture.height }, (Vector2){ 0, 0 }, WHITE);
-    
     EndShaderMode();
 
     // HUD
     // Define bar dimensions and padding
     float barWidth = 300.0f;
     float barHeight = 30.0f;
-    float padding = 20.0f;
+    float padding = 10.0f;
 
     // Iterate over all characters in the level
     for (const auto& character : characters) {
@@ -1471,12 +1599,12 @@ void Level::Update() {
                     mediumPosition = { padding, padding + barHeight + padding };
                     break;
                 case CharacterTypes::PLAYER_2:
-                    healthPosition = { SCREEN_WIDTH - barWidth - padding, padding };
-                    mediumPosition = { SCREEN_WIDTH - barWidth - padding, padding + barHeight + padding };
+                    healthPosition = { (float)GetScreenWidth() - barWidth - padding, padding };
+                    mediumPosition = { (float)GetScreenWidth() - barWidth - padding, padding + barHeight + padding };
                     break;
                 case CharacterTypes::CPU:
-                    healthPosition = { SCREEN_WIDTH - barWidth - padding, padding };
-                    mediumPosition = { SCREEN_WIDTH - barWidth - padding, padding + barHeight + padding };
+                    healthPosition = { (float)GetScreenWidth() - barWidth - padding, padding };
+                    mediumPosition = { (float)GetScreenWidth() - barWidth - padding, padding + barHeight + padding };
                 default:
                     // Default to top-left if type is unknown
                     healthPosition = { padding, padding };
@@ -1494,6 +1622,20 @@ void Level::Update() {
             // Draw health bar (proportional to current health)
             float healthBarFill = (float)health / mxHealth * barWidth;
             DrawRectangle(healthPosition.x, healthPosition.y, healthBarFill, barHeight, HEALTH_COLOR);
+
+            // Draw Ammo
+            if (character->GetAmmo() > 0) {
+                Vector2 ammoPosition = { mediumPosition.x, mediumPosition.y + barHeight + padding };
+                // Draw Ammo Bar
+                DrawRectangle(ammoPosition.x, ammoPosition.y, barWidth, barHeight, DARKGRAY);
+                // Draw Ammo Bar (proportional to current Ammo)
+                float ammoBarFill = (float)character->GetAmmo() / character->gun.maxAmmo * barWidth;
+                DrawRectangle(ammoPosition.x, ammoPosition.y, ammoBarFill, barHeight, AMMO_COLOR);
+                // Draw Ammo Text
+                DrawTextEx(font, TextFormat("AMMO: %d/%d", character->GetAmmo(), character->gun.maxAmmo), ammoPosition, SUBTEXT_SIZE, 0.0f, WHITE);
+            } else {
+                DrawTextEx(font, "RELOADING...", {mediumPosition.x, mediumPosition.y + barHeight + padding}, SUBTEXT_SIZE, 0.0f, RED);
+            }
             
             // Draw health text
             DrawTextEx(font, TextFormat("HP: %d/%d", health, mxHealth), healthPosition, SUBTEXT_SIZE, 0.0f, WHITE);
@@ -1511,13 +1653,13 @@ void Level::Update() {
     
     if (paused && player1Alive && player2Alive) {
         //Pause menu
-        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, PAUSE_BG_COLOR);
+        DrawRectangle(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(), PAUSE_BG_COLOR);
 
-        DrawTextEx(font, "PAUSED", (Vector2){SCREEN_WIDTH / 2 - MeasureTextEx(font, "PAUSED",
-                    PAUSE_TITLE_SIZE, 0.0f).x / 2, (SCREEN_HEIGHT / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+        DrawTextEx(font, "PAUSED", (Vector2){(float)GetScreenWidth() / 2 - MeasureTextEx(font, "PAUSED",
+                    PAUSE_TITLE_SIZE, 0.0f).x / 2, ((float)GetScreenHeight() / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
 
         // Resume button
-        Vector2 resumeButtonPosition = (Vector2) {SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + PAUSE_OPTION_SPACING} - MeasureTextEx(font, "Resume", SUBTEXT_SIZE, 0.0f) / 2;
+        Vector2 resumeButtonPosition = (Vector2) {(float)GetScreenWidth() / 2, ((float)GetScreenHeight() / 2) + PAUSE_OPTION_SPACING} - MeasureTextEx(font, "Resume", SUBTEXT_SIZE, 0.0f) / 2;
         if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){resumeButtonPosition.x, resumeButtonPosition.y,
             MeasureTextEx(font, "Resume", SUBTEXT_SIZE, 0.0f).x, SUBTEXT_SIZE})) {
                 DrawTextEx(font, "Resume", resumeButtonPosition, SUBTEXT_SIZE, 0.0f, HOVER_COLOR);
@@ -1531,7 +1673,7 @@ void Level::Update() {
         }
 
         // Menu button
-        Vector2 menuButtonPosition = (Vector2) {SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + PAUSE_OPTION_SPACING * 2} - MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f) / 2;
+        Vector2 menuButtonPosition = (Vector2) {(float)GetScreenWidth() / 2, ((float)GetScreenHeight() / 2) + PAUSE_OPTION_SPACING * 2} - MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f) / 2;
         if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){menuButtonPosition.x, menuButtonPosition.y, 
             MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f).x, SUBTEXT_SIZE})) {
                 
@@ -1548,21 +1690,26 @@ void Level::Update() {
     }
 
     if (!player1Alive || !player2Alive) {
-        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, PAUSE_BG_COLOR);
+        BeginTextureMode(levelEndTexture);
+        ClearBackground(Color{0, 0, 0, 0});
+
+        levelEndTime += GetFrameTime();
+
+        DrawRectangle(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(), PAUSE_BG_COLOR);
 
         if (player1Alive) {
-            DrawTextEx(font, "PLAYER 1 VICTORY", (Vector2){SCREEN_WIDTH / 2 - MeasureTextEx(font, "PLAYER 1 VICTORY",
-                    PAUSE_TITLE_SIZE, 0.0f).x / 2, (SCREEN_HEIGHT / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+            DrawTextEx(font, "PLAYER 1 VICTORY", (Vector2){(float)GetScreenWidth() / 2 - MeasureTextEx(font, "PLAYER 1 VICTORY",
+                    PAUSE_TITLE_SIZE, 0.0f).x / 2, ((float)GetScreenHeight() / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
         } else if (player2Alive) {
-            DrawTextEx(font, "PLAYER 2 VICTORY", (Vector2){SCREEN_WIDTH / 2 - MeasureTextEx(font, "PLAYER 2 VICTORY",
-                    PAUSE_TITLE_SIZE, 0.0f).x / 2, (SCREEN_HEIGHT / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+            DrawTextEx(font, "PLAYER 2 VICTORY", (Vector2){(float)GetScreenWidth() / 2 - MeasureTextEx(font, "PLAYER 2 VICTORY",
+                    PAUSE_TITLE_SIZE, 0.0f).x / 2, ((float)GetScreenHeight() / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
         } else {
-            DrawTextEx(font, "Draw!", (Vector2){SCREEN_WIDTH / 2 - MeasureTextEx(font, "Draw!",
-                    PAUSE_TITLE_SIZE, 0.0f).x / 2, (SCREEN_HEIGHT / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
+            DrawTextEx(font, "DRAW", (Vector2){(float)GetScreenWidth() / 2 - MeasureTextEx(font, "DRAW",
+                    PAUSE_TITLE_SIZE, 0.0f).x / 2, ((float)GetScreenHeight() / 2) - PAUSE_OPTION_SPACING}, PAUSE_TITLE_SIZE, 0.0f, WHITE);
         }
 
         // Menu button
-        Vector2 menuButtonPosition = (Vector2) {SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + PAUSE_OPTION_SPACING * 2} - MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f) / 2;
+        Vector2 menuButtonPosition = (Vector2) {(float)GetScreenWidth() / 2, ((float)GetScreenHeight() / 2) + PAUSE_OPTION_SPACING * 2} - MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f) / 2;
         if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){menuButtonPosition.x, menuButtonPosition.y, 
             MeasureTextEx(font, "Menu", SUBTEXT_SIZE, 0.0f).x, SUBTEXT_SIZE})) {
                 
@@ -1576,6 +1723,19 @@ void Level::Update() {
             DrawTextEx(font, "Menu", menuButtonPosition, SUBTEXT_SIZE, 0.0f, WHITE);
         }
 
+        EndTextureMode();
+    }
+
+    BeginShaderMode(transitionShader);
+    SetShaderValue(transitionShader, GetShaderLocation(transitionShader, "u_time"), &time, SHADER_UNIFORM_FLOAT);
+    DrawTextureRec(transitionTexture.texture, (Rectangle){ 0, 0, (float)transitionTexture.texture.width, (float)-transitionTexture.texture.height }, (Vector2){ 0, 0 }, WHITE);
+    EndShaderMode();
+
+    if (!player1Alive || !player2Alive) {
+        BeginShaderMode(levelEndShader);
+        SetShaderValue(levelEndShader, GetShaderLocation(levelEndShader, "u_time"), &levelEndTime, SHADER_UNIFORM_FLOAT);
+        DrawTextureRec(levelEndTexture.texture, (Rectangle){ 0, 0, (float)levelEndTexture.texture.width, (float)-levelEndTexture.texture.height }, (Vector2){ 0, 0 }, WHITE);
+        EndShaderMode();
     }
 
     EndDrawing();
@@ -2134,9 +2294,9 @@ void FreeDebris::DestroyShape(b2ShapeId shape) {
 }
 
 // SPRITE SETTINGS
-SpriteSettings::SpriteSettings(Vector2 spriteOffset, std::string folderName, float spriteScale, float framesPerSecond, std::unordered_map<AnimationStates, int> frameCounts,
-    std::unordered_map<AnimationStates, Shader> shaders) 
-: offset(spriteOffset), scale(spriteScale), framesPerSecond(framesPerSecond), frameCounts(frameCounts), shaders(shaders) {
+SpriteSettings::SpriteSettings(Vector2 spriteOffset, std::string folderName, float spriteScale, std::unordered_map<AnimationStates, int> frameCounts,
+    std::unordered_map<AnimationStates, float> frameRates, std::unordered_map<AnimationStates, Shader> shaders) 
+: offset(spriteOffset), scale(spriteScale), frameCounts(frameCounts), frameRates(frameRates), shaders(shaders) {
     totalFrames = std::accumulate(
         frameCounts.begin(), // Iterator to the beginning of the map
         frameCounts.end(),   // Iterator to the end of the map
@@ -2165,6 +2325,7 @@ void Emitter::Start(Vector2 initialPosition, bool flipX, bool flipY) {
     // Clear all particle arrays
     positions.clear();
     velocities.clear();
+    rotations.clear();
     scales.clear();
     lifetimes.clear();
     colors.clear();
@@ -2185,6 +2346,7 @@ void Emitter::Start(Vector2 initialPosition, bool flipX, bool flipY) {
     {
         positions.push_back(initialPosition);
         velocities.push_back((Vector2){RandomFloatRange(velocityMin.x, velocityMax.x), RandomFloatRange(velocityMin.y, velocityMax.y)});
+        rotations.push_back(RandomFloatRange(rotationMin, rotationMax));
         scales.push_back(RandomFloatRange(scaleMin, scaleMax));
         lifetimes.push_back(RandomFloatRange(lifetimeMin, lifetimeMax));
         colors.push_back((Color){(unsigned char) RandomFloatRange(colorBound1.r, colorBound2.r), (unsigned char) RandomFloatRange(colorBound1.g, colorBound2.g), 
@@ -2219,7 +2381,7 @@ void Emitter::Draw() {
     BeginShaderMode(shader);
     for (int i = 0; i < numParticles; i++) {
         if (lifetimes[i] > 0.0f) {
-            DrawCircle(positions[i].x, positions[i].y, scales[i], colors[i]);
+            DrawTextureEx(texture, positions[i], rotations[i], scales[i], colors[i]);
         }
     }
     EndShaderMode();
@@ -2228,13 +2390,19 @@ void Emitter::Draw() {
 // GAME INSTANCE
 GameInstance::GameInstance(std::string startingMenu) : startingMenu(startingMenu) {
     // Initialization
+
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     SetConfigFlags(FLAG_VSYNC_HINT);
 
     SetTraceLogLevel(LOG_WARNING);
 
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "MEDIUM");
-    ToggleFullscreen();
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_NAME);
+
+    InitAudioDevice();
+
+    loadIds = {};
+    loadIds.insert(std::pair<std::string, std::string>("character_1", ""));
+    loadIds.insert(std::pair<std::string, std::string>("character_2", ""));
 
     SetMenu(startingMenu);
     currentLevel = nullptr;
@@ -2255,6 +2423,11 @@ void GameInstance::SetMenu(std::string name) {
     currentMenu = LoadMenu(name, this);
 }
 
-void GameInstance::SetLevel(std::string name, std::vector<std::string> characterLoadIds) {
+void GameInstance::SetLevel(std::string name) {
+    std::vector<std::string> characterLoadIds = {};
+
+    characterLoadIds.push_back(loadIds["character_1"]);
+    characterLoadIds.push_back(loadIds["character_2"]);
+
     currentLevel = LoadLevel(name, this, characterLoadIds);
 }
